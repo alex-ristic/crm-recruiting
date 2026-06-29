@@ -8,9 +8,7 @@ async function initialize() {
     render: renderApp
   });
   replaceState(await loadState());
-  saveState();
   renderApp();
 }
 
 initialize();
-

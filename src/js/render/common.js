@@ -35,7 +35,7 @@ export function renderTopbar() {
         <input data-search value="${escapeAttr(state.search)}" placeholder="${copy[2]}" />
       </label>
       <button class="primary-button" data-add="${copy[3]}">${copy[4] ? icon("x") : icon("plus")} ${copy[4] ? "Close" : `Add ${copy[3]}`}</button>
+      <button class="logout-button" data-logout>Logout</button>
     </header>
   `;
 }
-

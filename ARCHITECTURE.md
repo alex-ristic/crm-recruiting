@@ -20,13 +20,16 @@ crm/
   app.py                 HTTP server factory and static file serving
   config.py              Environment-backed settings
   logging_config.py      Logging setup
+  auth.py                Password hashing, session cookies, CSRF helpers
+  routes/auth.py         Login, logout, session endpoint
   routes/state.py        /api/state handlers
   storage/base.py        Storage interface
-  storage/json_storage.py JSON-backed storage implementation
+  storage/json_storage.py JSON-backed storage with local backups
   utils/validation.py    Request parsing and validation helpers
+  utils/state_validation.py CRM state schema validation
 ```
 
-The backend keeps routes separate from storage so a later Postgres implementation can replace `JsonStateStorage` without changing the API route shape.
+The backend keeps routes separate from storage so a later Postgres implementation can replace `JsonStateStorage` without changing the API route shape. When auth is enabled, all CRM pages and API routes require a signed HttpOnly session cookie.
 
 ## Frontend Layout
 
@@ -66,6 +69,10 @@ Rendering, event binding, state persistence, and domain actions are now separate
 
 The frontend relies on:
 
+- `GET /login`
+- `POST /login`
+- `POST /logout`
+- `GET /api/session`
 - `GET /api/state`
 - `POST /api/state`
 - `/`
@@ -74,6 +81,17 @@ The frontend relies on:
 - `/src/**/*.js`
 
 The server serves `index.html` plus `.js` and `.css` files under `src/`. It does not expose the project root.
+
+`POST /api/state` requires authentication and an `X-CSRF-Token` header when auth is enabled. The frontend gets that token from `/api/session`.
+
+## Data Safety
+
+Before every successful state overwrite, `JsonStateStorage` copies the previous state file into the configured backup directory. Production paths:
+
+```text
+/var/lib/crm-recruiting/crm-state.json
+/var/lib/crm-recruiting/backups/
+```
 
 ## Storage Migration Path
 

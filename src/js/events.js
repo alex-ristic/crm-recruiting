@@ -32,7 +32,7 @@ import {
   updateNewTaskUrgency,
   updateTask
 } from "./actions/tasks.js";
-import { closeModals, switchTab, toggleJobComposer, togglePositionComposer, updateSearch } from "./actions/ui.js";
+import { closeModals, logoutCurrentUser, switchTab, toggleJobComposer, togglePositionComposer, updateSearch } from "./actions/ui.js";
 
 let pointerDrag = null;
 let suppressClick = null;
@@ -40,6 +40,7 @@ let suppressClick = null;
 export function bindEvents() {
   app.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => switchTab(button.dataset.tab)));
   app.querySelector("[data-search]")?.addEventListener("input", updateSearch);
+  app.querySelector("[data-logout]")?.addEventListener("click", logoutCurrentUser);
   app.querySelector("[data-close-modal]")?.addEventListener("click", () => setState({ selectedId: null }));
   app.querySelector("[data-close-position-modal]")?.addEventListener("click", () => setState({ selectedPositionId: null }));
   app.querySelectorAll("[data-modal-overlay]").forEach((overlay) => overlay.addEventListener("click", (event) => {
@@ -203,4 +204,3 @@ function handleDrop(event) {
   if (payload.type === "candidate") moveCandidateToStage(payload.id, stage);
   if (payload.type === "position") movePositionToStage(payload.id, stage);
 }
-

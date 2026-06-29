@@ -1,5 +1,6 @@
 import { setPendingFocusSelector } from "../dom.js";
 import { state, setState } from "../state.js";
+import { logout } from "../api.js";
 
 export function updateSearch(event) {
   setPendingFocusSelector("[data-search]");
@@ -22,3 +23,6 @@ export function togglePositionComposer() {
   setState({ showPositionComposer: !state.showPositionComposer });
 }
 
+export function logoutCurrentUser() {
+  logout();
+}

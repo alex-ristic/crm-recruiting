@@ -25,6 +25,15 @@ The frontend pass split the old single `src/app.js` into focused browser modules
 - Shared formatting/date/id helpers moved under `src/js/utils/`.
 - The backend static server now serves nested `.js` files under `src/` for browser module imports.
 
+The VPS prep pass added:
+
+- Single-user auth using `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, and `SESSION_SECRET`.
+- Signed HttpOnly session cookies and CSRF-protected state writes.
+- Login, logout, and `/api/session`.
+- CRM state validation before save.
+- Timestamped local backups before overwrite.
+- VPS deployment and offsite backup docs.
+
 ## Safety Backup
 
 A pre-refactor copy was created outside the served project tree:
@@ -35,23 +44,22 @@ A pre-refactor copy was created outside the served project tree:
 
 ## Behavior Notes
 
-The main app behavior is intended to be unchanged. One deliberate hardening change was made: the server no longer serves arbitrary files from the project root, so files like `crm-state.json` are not directly downloadable as static files. Browser module files under `src/` are now served so the frontend can use ES modules.
+The main app behavior is intended to be unchanged. One deliberate hardening change was made: the server no longer serves arbitrary files from the project root, so files like `crm-state.json` are not directly downloadable as static files. Browser module files under `src/` are served so the frontend can use ES modules. In VPS mode, auth must be configured before the CRM is exposed online.
 
 ## Remaining Technical Debt
 
 - Frontend modules are separated, but many render functions are still string-template based and large.
 - The API still persists the complete CRM state as one JSON document.
-- There is no authentication or authorization.
-- There is no CSRF protection.
-- There is no schema validation for individual candidates, positions, jobs, or tasks.
+- Authentication is single-user only.
+- CRM state validation is intentionally basic and should become stricter before bulk imports.
 - Browser interaction checks are manual/runtime checks, not automated test-suite coverage yet.
 - Google Fonts are loaded from the network.
-- There is no deployment profile yet.
+- VPS deployment docs exist, but no deployment has been performed from this workspace.
 
 ## Suggested Next Steps
 
-1. Add state schema validation before CSV or AI imports.
+1. Tighten state validation before CSV or AI imports.
 2. Add an import staging service for CSV/AI extraction so imported data can be reviewed before saving.
-3. Add authentication before any deployment work.
+3. Add automated browser tests for add/edit/delete/task persistence.
 4. Add a database-backed storage implementation when concurrent use or reporting becomes important.
-5. Add automated browser tests for add/edit/delete/task persistence.
+5. Add multi-user auth only if the CRM workflow needs it.

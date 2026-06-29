@@ -7,8 +7,6 @@ import {
 } from "./constants.js";
 import { today } from "./utils/dates.js";
 
-const storageKey = "recruiting-crm-state-v4";
-
 export const defaultState = {
   activeTab: "positions",
   selectedId: null,
@@ -32,6 +30,7 @@ export let state = structuredClone(defaultState);
 
 let renderCallback = () => {};
 let beforeRenderCallback = () => {};
+let saveChain = Promise.resolve();
 
 export function configureState({ beforeRender, render }) {
   beforeRenderCallback = beforeRender || beforeRenderCallback;
@@ -41,13 +40,7 @@ export function configureState({ beforeRender, render }) {
 export async function loadState() {
   const serverState = await loadServerState();
   if (serverState) return hydrateState(serverState);
-  const stored = localStorage.getItem(storageKey);
-  if (!stored) return structuredClone(defaultState);
-  try {
-    return hydrateState(JSON.parse(stored));
-  } catch {
-    return structuredClone(defaultState);
-  }
+  return structuredClone(defaultState);
 }
 
 export function replaceState(nextState) {
@@ -91,8 +84,18 @@ export function freshPositionDraft(jobId = "kuvar-hr") {
 }
 
 export function saveState() {
-  localStorage.setItem(storageKey, JSON.stringify(state));
-  saveServerState(state);
+  saveChain = saveChain
+    .catch(() => {})
+    .then(() => saveServerState(state))
+    .then((payload) => {
+      if (payload?.state?._revision !== undefined) state._revision = payload.state._revision;
+    })
+    .catch((error) => {
+      if (error?.state) {
+        state = hydrateState(error.state);
+        renderCallback();
+      }
+    });
 }
 
 export function setState(patch) {
@@ -156,4 +159,3 @@ function normalizePosition(position) {
     headlineOverrides: { city: null, client: null, job: null, ...(position.headlineOverrides || {}) }
   };
 }
-

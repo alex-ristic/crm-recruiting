@@ -4,9 +4,12 @@ import threading
 import unittest
 import urllib.error
 import urllib.request
+import urllib.parse
+import http.cookiejar
 from dataclasses import replace
 from pathlib import Path
 
+from crm.auth import hash_password
 from crm.app import create_server
 from crm.config import load_settings
 from crm.storage import JsonStateStorage
@@ -21,7 +24,9 @@ class ServerSmokeTest(unittest.TestCase):
             host="127.0.0.1",
             port=0,
             state_file=self.state_file,
+            backup_dir=Path(self.temp_dir.name) / "backups",
             max_state_bytes=1024 * 1024,
+            auth_required=False,
         )
         self.server = create_server(
             settings=self.settings,
@@ -50,8 +55,9 @@ class ServerSmokeTest(unittest.TestCase):
         payload = {"activeTab": "positions", "jobs": [], "positions": [], "candidates": []}
         response = self._post_json("/api/state", payload)
 
-        self.assertEqual(response, {"ok": True})
-        self.assertEqual(self._get_json("/api/state"), {"state": payload})
+        self.assertTrue(response["ok"])
+        self.assertEqual(response["state"]["_revision"], 1)
+        self.assertEqual(self._get_json("/api/state"), {"state": response["state"]})
 
     def test_bad_json_returns_400(self):
         request = urllib.request.Request(
@@ -66,6 +72,26 @@ class ServerSmokeTest(unittest.TestCase):
 
         self.assertEqual(error.exception.code, 400)
 
+    def test_invalid_state_is_rejected_without_overwrite(self):
+        valid = self._post_json("/api/state", {"activeTab": "positions", "jobs": [], "positions": [], "candidates": []})["state"]
+        invalid = {"activeTab": "positions", "jobs": "bad", "positions": [], "candidates": [], "_revision": valid["_revision"]}
+
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self._post_json("/api/state", invalid)
+
+        self.assertEqual(error.exception.code, 400)
+        self.assertEqual(self._get_json("/api/state"), {"state": valid})
+
+    def test_backup_created_before_overwrite(self):
+        first = self._post_json("/api/state", {"activeTab": "positions", "jobs": [], "positions": [], "candidates": []})["state"]
+        second = {**first, "search": "updated"}
+
+        self._post_json("/api/state", second)
+
+        backups = list((Path(self.temp_dir.name) / "backups").glob("crm-state-*.json"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(json.loads(backups[0].read_text(encoding="utf-8")), first)
+
     def test_state_file_is_not_served_staticly(self):
         self.state_file.write_text(json.dumps({"secret": "local data"}), encoding="utf-8")
 
@@ -73,6 +99,83 @@ class ServerSmokeTest(unittest.TestCase):
             urllib.request.urlopen(f"{self.base_url}/crm-state.json", timeout=5)
 
         self.assertEqual(error.exception.code, 404)
+
+    def test_auth_protects_pages_api_and_post_csrf(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            state_file = Path(temp_dir) / "state.json"
+            settings = replace(
+                load_settings(),
+                host="127.0.0.1",
+                port=0,
+                state_file=state_file,
+                backup_dir=Path(temp_dir) / "backups",
+                auth_required=True,
+                admin_username="admin",
+                admin_password_hash=hash_password("secret-password"),
+                session_secret="test-session-secret-with-enough-length",
+                cookie_secure=False,
+            )
+            server = create_server(settings=settings, storage=JsonStateStorage(state_file, settings.backup_dir))
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            host, port = server.server_address
+            base_url = f"http://{host}:{port}"
+            try:
+                with self.assertRaises(urllib.error.HTTPError) as api_error:
+                    urllib.request.urlopen(f"{base_url}/api/state", timeout=5)
+                self.assertEqual(api_error.exception.code, 401)
+
+                login_page = urllib.request.urlopen(f"{base_url}/", timeout=5).read().decode("utf-8")
+                self.assertIn("Sign in to continue", login_page)
+
+                jar = http.cookiejar.CookieJar()
+                opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+                login_body = urllib.parse.urlencode({"username": "admin", "password": "secret-password"}).encode("utf-8")
+                login_request = urllib.request.Request(
+                    f"{base_url}/login",
+                    data=login_body,
+                    method="POST",
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                )
+                opener.open(login_request, timeout=5)
+
+                session = json.loads(opener.open(f"{base_url}/api/session", timeout=5).read().decode("utf-8"))
+                self.assertTrue(session["authenticated"])
+                self.assertTrue(session["csrfToken"])
+
+                protected_post = urllib.request.Request(
+                    f"{base_url}/api/state",
+                    data=json.dumps({"activeTab": "positions", "jobs": [], "positions": [], "candidates": []}).encode("utf-8"),
+                    method="POST",
+                    headers={"Content-Type": "application/json"},
+                )
+                with self.assertRaises(urllib.error.HTTPError) as csrf_error:
+                    opener.open(protected_post, timeout=5)
+                self.assertEqual(csrf_error.exception.code, 403)
+
+                allowed_post = urllib.request.Request(
+                    f"{base_url}/api/state",
+                    data=json.dumps({"activeTab": "positions", "jobs": [], "positions": [], "candidates": []}).encode("utf-8"),
+                    method="POST",
+                    headers={"Content-Type": "application/json", "X-CSRF-Token": session["csrfToken"]},
+                )
+                response = json.loads(opener.open(allowed_post, timeout=5).read().decode("utf-8"))
+                self.assertTrue(response["ok"])
+
+                logout_request = urllib.request.Request(
+                    f"{base_url}/logout",
+                    data=b"",
+                    method="POST",
+                    headers={"X-CSRF-Token": session["csrfToken"]},
+                )
+                opener.open(logout_request, timeout=5)
+                with self.assertRaises(urllib.error.HTTPError) as logged_out_error:
+                    opener.open(f"{base_url}/api/state", timeout=5)
+                self.assertEqual(logged_out_error.exception.code, 401)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
 
     def _get_text(self, path):
         with urllib.request.urlopen(f"{self.base_url}{path}", timeout=5) as response:
