@@ -20,7 +20,7 @@ class ServerSmokeTest(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.state_file = Path(self.temp_dir.name) / "state.json"
         self.settings = replace(
-            load_settings(),
+            load_settings(load_dotenv_file=False),
             host="127.0.0.1",
             port=0,
             state_file=self.state_file,
@@ -104,7 +104,7 @@ class ServerSmokeTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             state_file = Path(temp_dir) / "state.json"
             settings = replace(
-                load_settings(),
+                load_settings(load_dotenv_file=False),
                 host="127.0.0.1",
                 port=0,
                 state_file=state_file,

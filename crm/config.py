@@ -6,6 +6,20 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
+def _load_dotenv(path):
+    if not path.exists():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            os.environ.setdefault(key, value)
+
+
 def _int_env(name, default):
     raw = os.environ.get(name)
     if raw is None or raw == "":
@@ -53,7 +67,9 @@ class Settings:
         return self.auth_enabled and not self.auth_configured
 
 
-def load_settings():
+def load_settings(load_dotenv_file=True):
+    if load_dotenv_file:
+        _load_dotenv(PROJECT_ROOT / ".env")
     state_file = os.environ.get("CRM_STATE_FILE")
     backup_dir = os.environ.get("CRM_BACKUP_DIR")
     resolved_state_file = Path(state_file).expanduser() if state_file else PROJECT_ROOT / "crm-state.json"
