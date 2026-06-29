@@ -1,0 +1,110 @@
+import { state, setState, setStateQuiet } from "../state.js";
+import { syncLinkedPosition } from "./candidates.js";
+import { actionLabel } from "../utils/formatting.js";
+import { completionTimestamp, today } from "../utils/dates.js";
+import { candidateStages } from "../constants.js";
+
+export function updateNewTaskTitle(event) {
+  setStateQuiet({ newTask: { ...state.newTask, title: event.target.value } });
+}
+
+export function updateNewTaskDate(event) {
+  setStateQuiet({ newTask: { ...state.newTask, due: event.target.value } });
+}
+
+export function updateNewTaskTime(event) {
+  setStateQuiet({ newTask: { ...state.newTask, time: event.target.value } });
+}
+
+export function clearNewTaskTime() {
+  setState({ newTask: { ...state.newTask, time: "" } });
+}
+
+export function updateNewTaskUrgency(urgency) {
+  setState({ newTask: { ...state.newTask, urgency } });
+}
+
+export function addTask(candidateId) {
+  if (!state.newTask.title.trim()) return;
+  const task = { id: `task-${Date.now()}`, title: state.newTask.title.trim(), urgency: state.newTask.urgency, due: state.newTask.due || today(), time: state.newTask.time || "", done: false, note: "" };
+  setState({
+    candidates: state.candidates.map((candidate) => candidate.id === candidateId ? { ...candidate, tasks: [...candidate.tasks, task] } : candidate),
+    newTask: { title: "", urgency: 2, due: today(), time: "" }
+  });
+}
+
+export function updateTask(event) {
+  const [candidateId, taskId, key] = event.target.dataset.taskField.split(":");
+  const value = key === "urgency" ? Number(event.target.value) : event.target.value;
+  const patch = {
+    candidates: state.candidates.map((candidate) => candidate.id === candidateId ? {
+      ...candidate,
+      tasks: candidate.tasks.map((task) => task.id === taskId ? { ...task, [key]: value } : task)
+    } : candidate)
+  };
+  if (["title", "note"].includes(key)) setStateQuiet(patch);
+  else setState(patch);
+}
+
+export function clearTaskTime(event) {
+  const [candidateId, taskId] = event.currentTarget.dataset.clearTaskTime.split(":");
+  setState({
+    candidates: state.candidates.map((candidate) => candidate.id === candidateId ? {
+      ...candidate,
+      tasks: candidate.tasks.map((task) => task.id === taskId ? { ...task, time: "" } : task)
+    } : candidate)
+  });
+}
+
+export function deleteTask(event) {
+  const [candidateId, taskId] = event.currentTarget.dataset.deleteTask.split(":");
+  setState({
+    candidates: state.candidates.map((candidate) => candidate.id === candidateId ? {
+      ...candidate,
+      tasks: candidate.tasks.filter((task) => task.id !== taskId)
+    } : candidate)
+  });
+}
+
+export function toggleTask(event) {
+  const [candidateId, taskId] = event.currentTarget.dataset.toggleTask.split(":");
+  setState({
+    candidates: state.candidates.map((candidate) => candidate.id === candidateId ? {
+      ...candidate,
+      tasks: candidate.tasks.map((task) => {
+        if (task.id !== taskId) return task;
+        const done = !task.done;
+        return { ...task, done, completedAt: done ? completionTimestamp() : "" };
+      })
+    } : candidate)
+  });
+}
+
+export function quickAction(event) {
+  const [candidateId, taskId, action] = event.currentTarget.dataset.action.split(":");
+  const earlyStages = new Set(["new-lead", "in-work"]);
+  let nextCandidates = state.candidates.map((candidate) => {
+    if (candidate.id !== candidateId) return candidate;
+    let stage = candidate.stage;
+    if (action === "good-to-place") {
+      const currentIndex = candidateStages.findIndex(([stageId]) => stageId === stage);
+      const goodIndex = candidateStages.findIndex(([stageId]) => stageId === "good-to-place");
+      if (currentIndex >= 0 && currentIndex < goodIndex) stage = "good-to-place";
+    }
+    else if (earlyStages.has(stage)) {
+      const stageByAction = {
+        interested: "negotiation",
+        "not-interested": "closed-lost",
+        disqualify: "disqualified",
+        "no-call-dq": "disqualified"
+      };
+      if (action === "no-answer" && stage === "new-lead") stage = "in-work";
+      if (stageByAction[action]) stage = stageByAction[action];
+    }
+    const tasks = candidate.tasks.map((task) => task.id === taskId ? { ...task, done: true, completedAt: task.completedAt || completionTimestamp(), note: [task.note, actionLabel(action)].filter(Boolean).join("\n") } : task);
+    return { ...candidate, stage, tasks };
+  });
+  const changed = nextCandidates.find((candidate) => candidate.id === candidateId);
+  setState(syncLinkedPosition({ candidates: nextCandidates }, candidateId, changed.stage));
+}
+

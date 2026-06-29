@@ -17,8 +17,6 @@ logger = logging.getLogger(__name__)
 STATIC_FILES = {
     "/": "index.html",
     "/index.html": "index.html",
-    "/src/app.js": "src/app.js",
-    "/src/styles.css": "src/styles.css",
 }
 
 
@@ -47,13 +45,14 @@ class CRMRequestHandler(BaseHTTPRequestHandler):
         return unquote(urlparse(self.path).path)
 
     def _serve_static(self, path):
-        relative_path = STATIC_FILES.get(path)
-        if not relative_path:
+        relative_path = _static_path_for(path)
+        if relative_path is None:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
 
         file_path = (self.settings.project_root / relative_path).resolve()
-        if not _is_within(file_path, self.settings.project_root):
+        allowed_root = self.settings.project_root / "src" if path.startswith("/src/") else self.settings.project_root
+        if not _is_within(file_path, allowed_root):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
 
@@ -77,6 +76,17 @@ def _is_within(path, root):
     except ValueError:
         return False
     return True
+
+
+def _static_path_for(path):
+    if path in STATIC_FILES:
+        return STATIC_FILES[path]
+    if not path.startswith("/src/"):
+        return None
+    relative_path = path.lstrip("/")
+    if Path(relative_path).suffix not in {".js", ".css"}:
+        return None
+    return relative_path
 
 
 def create_server(settings=None, storage=None):

@@ -40,7 +40,8 @@ class ServerSmokeTest(unittest.TestCase):
 
     def test_main_routes_respond(self):
         self.assertIn("Recruiting CRM", self._get_text("/"))
-        self.assertIn("const storageKey", self._get_text("/src/app.js"))
+        self.assertIn("initialize();", self._get_text("/src/app.js"))
+        self.assertIn("export let state", self._get_text("/src/js/state.js"))
         self.assertIn(".crm-shell", self._get_text("/src/styles.css"))
 
     def test_api_state_round_trip(self):
@@ -93,4 +94,3 @@ class ServerSmokeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -1,0 +1,159 @@
+import { loadServerState, saveServerState } from "./api.js";
+import {
+  defaultJobs,
+  defaultPositions,
+  placeholderCandidateIds,
+  placeholderPositionIds
+} from "./constants.js";
+import { today } from "./utils/dates.js";
+
+const storageKey = "recruiting-crm-state-v4";
+
+export const defaultState = {
+  activeTab: "positions",
+  selectedId: null,
+  selectedPositionId: null,
+  search: "",
+  positionFilters: { jobIds: [], clients: [], cities: [], eu: false, accommodation: false },
+  openPositionFilter: null,
+  positionFilterSearch: { jobIds: "", clients: "", cities: "" },
+  collapsedCandidateGroups: {},
+  showJobComposer: false,
+  showPositionComposer: false,
+  jobs: defaultJobs,
+  positions: defaultPositions,
+  candidates: [],
+  newTask: { title: "", urgency: 2, due: today(), time: "" },
+  newJob: { name: "", note: "" },
+  newPosition: { name: "", jobId: "kuvar-hr", client: "", city: "", salary: "", eu: false, accommodation: false, food: false, note: "", openings: 1 }
+};
+
+export let state = structuredClone(defaultState);
+
+let renderCallback = () => {};
+let beforeRenderCallback = () => {};
+
+export function configureState({ beforeRender, render }) {
+  beforeRenderCallback = beforeRender || beforeRenderCallback;
+  renderCallback = render || renderCallback;
+}
+
+export async function loadState() {
+  const serverState = await loadServerState();
+  if (serverState) return hydrateState(serverState);
+  const stored = localStorage.getItem(storageKey);
+  if (!stored) return structuredClone(defaultState);
+  try {
+    return hydrateState(JSON.parse(stored));
+  } catch {
+    return structuredClone(defaultState);
+  }
+}
+
+export function replaceState(nextState) {
+  state = nextState;
+}
+
+export function hydrateState(parsed) {
+  const jobs = mergeById(parsed.jobs || [], defaultJobs);
+  const positionFilters = normalizePositionFilters(parsed.positionFilters || {});
+  const positions = mergeById(
+    (parsed.positions || []).filter((position) => !placeholderPositionIds.has(position.id)).map(normalizePosition),
+    defaultPositions
+  );
+  const candidates = (parsed.candidates || [])
+    .filter((candidate) => !placeholderCandidateIds.has(candidate.id))
+    .map((candidate) => normalizeCandidate({
+      ...candidate,
+      positionId: placeholderPositionIds.has(candidate.positionId) ? "" : candidate.positionId
+    }));
+  return {
+    ...structuredClone(defaultState),
+    ...parsed,
+    selectedPositionId: null,
+    showJobComposer: false,
+    showPositionComposer: false,
+    positionFilters,
+    openPositionFilter: null,
+    positionFilterSearch: { jobIds: "", clients: "", cities: "" },
+    collapsedCandidateGroups: parsed.collapsedCandidateGroups || {},
+    jobs,
+    positions,
+    candidates,
+    newTask: { title: "", urgency: 2, due: today(), time: "" },
+    newJob: { name: "", note: "" },
+    newPosition: freshPositionDraft(jobs[0]?.id || "kuvar-hr")
+  };
+}
+
+export function freshPositionDraft(jobId = "kuvar-hr") {
+  return { name: "", jobId, client: "", city: "", salary: "", url: "", eu: false, accommodation: false, food: false, note: "", openings: 1, headlineOverrides: { city: null, client: null, job: null } };
+}
+
+export function saveState() {
+  localStorage.setItem(storageKey, JSON.stringify(state));
+  saveServerState(state);
+}
+
+export function setState(patch) {
+  beforeRenderCallback();
+  state = { ...state, ...patch };
+  saveState();
+  renderCallback();
+}
+
+export function setStateQuiet(patch) {
+  state = { ...state, ...patch };
+  saveState();
+}
+
+function mergeById(existing, defaults) {
+  const seen = new Set(existing.map((item) => item.id));
+  return [...existing, ...defaults.filter((item) => !seen.has(item.id))];
+}
+
+function normalizePositionFilters(filters) {
+  return {
+    jobIds: Array.isArray(filters.jobIds) ? filters.jobIds : filters.jobId ? [filters.jobId] : [],
+    clients: Array.isArray(filters.clients) ? filters.clients : [],
+    cities: Array.isArray(filters.cities) ? filters.cities : [],
+    eu: !!filters.eu,
+    accommodation: !!filters.accommodation
+  };
+}
+
+function normalizeCandidate(candidate) {
+  return {
+    positionId: "",
+    ...candidate,
+    tasks: (candidate.tasks || []).map((task) => normalizeTask(task))
+  };
+}
+
+function normalizeTask(task) {
+  const normalized = { time: "", completedAt: "", ...task };
+  if (normalized.done && !normalized.completedAt) {
+    normalized.completedAt = `${normalized.due || today()}T${normalized.time || "00:00"}`;
+  }
+  if (!normalized.done) normalized.completedAt = "";
+  return normalized;
+}
+
+function normalizePosition(position) {
+  const normalized = {
+    salary: "",
+    eu: false,
+    accommodation: false,
+    food: false,
+    url: "",
+    note: "",
+    openings: 1,
+    headlineOverrides: { city: null, client: null, job: null },
+    ...position
+  };
+  return {
+    ...normalized,
+    headlineOverrides: { city: null, client: null, job: null, ...(position.headlineOverrides || {}) }
+  };
+}
+
