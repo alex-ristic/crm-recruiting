@@ -1,0 +1,2 @@
+"""Recruiting CRM backend package."""
+
