@@ -128,9 +128,17 @@ export function deletePosition(positionId) {
   });
 }
 
-export function movePositionToStage(positionId, stage) {
+export function movePositionToStage(positionId, stage, beforePositionId = null) {
   const oldPosition = state.positions.find((position) => position.id === positionId);
-  let patch = { positions: state.positions.map((position) => position.id === positionId ? { ...position, stage } : position) };
+  if (!oldPosition) return;
+  const movedPosition = { ...oldPosition, stage };
+  const remainingPositions = state.positions.filter((position) => position.id !== positionId);
+  const insertIndex = beforePositionId
+    ? remainingPositions.findIndex((position) => position.id === beforePositionId)
+    : -1;
+  const nextPositions = [...remainingPositions];
+  nextPositions.splice(insertIndex >= 0 ? insertIndex : nextPositions.length, 0, movedPosition);
+  let patch = { positions: nextPositions };
   if (stage !== "open" && oldPosition && oldPosition.stage !== "open") {
     patch = {
       ...patch,

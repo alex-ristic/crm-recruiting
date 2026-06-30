@@ -26,6 +26,7 @@ def handle_get_state(handler):
 def handle_post_state(handler):
     try:
         payload = parse_json_body(handler, handler.settings.max_state_bytes)
+        strip_removed_fields(payload)
         validate_crm_state(payload)
         current_state = handler.storage.load_state()
         current_revision = current_state.get("_revision", 0) if isinstance(current_state, dict) else 0
@@ -48,3 +49,28 @@ def handle_post_state(handler):
         send_json(handler, {"ok": False}, HTTPStatus.INTERNAL_SERVER_ERROR)
         return
     send_json(handler, {"ok": True, "state": payload})
+
+
+def strip_removed_fields(payload):
+    if not isinstance(payload, dict):
+        return
+    candidates = payload.get("candidates")
+    if not isinstance(candidates, list):
+        return
+    allowed_candidate_fields = {
+        "added",
+        "id",
+        "jobId",
+        "name",
+        "note",
+        "phone",
+        "positionId",
+        "source",
+        "stage",
+        "tasks",
+    }
+    for candidate in candidates:
+        if isinstance(candidate, dict):
+            for field in list(candidate):
+                if field not in allowed_candidate_fields:
+                    candidate.pop(field, None)

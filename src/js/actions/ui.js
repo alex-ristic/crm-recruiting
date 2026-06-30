@@ -7,12 +7,17 @@ export function updateSearch(event) {
   setState({ search: event.target.value });
 }
 
+export function updateTaskView(event) {
+  const key = event.target.dataset.taskView;
+  setState({ taskView: { ...state.taskView, [key]: event.target.value } });
+}
+
 export function switchTab(tab) {
-  setState({ activeTab: tab, selectedId: null, selectedPositionId: null });
+  setState({ activeTab: tab, selectedId: null, selectedPositionId: null, taskComposerCandidateId: null });
 }
 
 export function closeModals() {
-  setState({ selectedId: null, selectedPositionId: null });
+  setState({ selectedId: null, selectedPositionId: null, taskComposerCandidateId: null });
 }
 
 export function toggleJobComposer() {

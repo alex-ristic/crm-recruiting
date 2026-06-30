@@ -89,4 +89,3 @@ function fallbackHeadlinePart(position, key) {
   if (key === "job") return cleanJobName(position.jobId);
   return "";
 }
-

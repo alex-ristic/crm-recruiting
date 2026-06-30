@@ -1,15 +1,27 @@
-import { state, setState, setStateQuiet } from "../state.js";
+import { freshTaskDraft, state, setState, setStateQuiet } from "../state.js";
 import { syncLinkedPosition } from "./candidates.js";
 import { actionLabel } from "../utils/formatting.js";
-import { completionTimestamp, today } from "../utils/dates.js";
+import { addDays, completionTimestamp, today } from "../utils/dates.js";
 import { candidateStages } from "../constants.js";
 
 export function updateNewTaskTitle(event) {
   setStateQuiet({ newTask: { ...state.newTask, title: event.target.value } });
 }
 
+export function toggleTaskComposer(candidateId) {
+  const open = state.taskComposerCandidateId === candidateId;
+  setState({
+    taskComposerCandidateId: open ? null : candidateId,
+    newTask: freshTaskDraft()
+  });
+}
+
 export function updateNewTaskDate(event) {
   setStateQuiet({ newTask: { ...state.newTask, due: event.target.value } });
+}
+
+export function setNewTaskDueShortcut(days) {
+  setState({ newTask: { ...state.newTask, due: addDays(today(), days) } });
 }
 
 export function updateNewTaskTime(event) {
@@ -29,7 +41,8 @@ export function addTask(candidateId) {
   const task = { id: `task-${Date.now()}`, title: state.newTask.title.trim(), urgency: state.newTask.urgency, due: state.newTask.due || today(), time: state.newTask.time || "", done: false, note: "" };
   setState({
     candidates: state.candidates.map((candidate) => candidate.id === candidateId ? { ...candidate, tasks: [...candidate.tasks, task] } : candidate),
-    newTask: { title: "", urgency: 2, due: today(), time: "" }
+    newTask: freshTaskDraft(),
+    taskComposerCandidateId: null
   });
 }
 
@@ -44,6 +57,16 @@ export function updateTask(event) {
   };
   if (["title", "note"].includes(key)) setStateQuiet(patch);
   else setState(patch);
+}
+
+export function setTaskDueShortcut(event) {
+  const [candidateId, taskId, days] = event.currentTarget.dataset.taskDueShortcut.split(":");
+  setState({
+    candidates: state.candidates.map((candidate) => candidate.id === candidateId ? {
+      ...candidate,
+      tasks: candidate.tasks.map((task) => task.id === taskId ? { ...task, due: addDays(today(), Number(days)) } : task)
+    } : candidate)
+  });
 }
 
 export function clearTaskTime(event) {
@@ -107,4 +130,3 @@ export function quickAction(event) {
   const changed = nextCandidates.find((candidate) => candidate.id === candidateId);
   setState(syncLinkedPosition({ candidates: nextCandidates }, candidateId, changed.stage));
 }
-

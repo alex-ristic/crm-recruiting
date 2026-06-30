@@ -8,7 +8,7 @@ import {
 import { today } from "./utils/dates.js";
 
 export const defaultState = {
-  activeTab: "positions",
+  activeTab: "tasks",
   selectedId: null,
   selectedPositionId: null,
   search: "",
@@ -16,12 +16,14 @@ export const defaultState = {
   openPositionFilter: null,
   positionFilterSearch: { jobIds: "", clients: "", cities: "" },
   collapsedCandidateGroups: {},
+  taskView: { groupBy: "due", sortBy: "due" },
+  taskComposerCandidateId: null,
   showJobComposer: false,
   showPositionComposer: false,
   jobs: defaultJobs,
   positions: defaultPositions,
   candidates: [],
-  newTask: { title: "", urgency: 2, due: today(), time: "" },
+  newTask: freshTaskDraft(),
   newJob: { name: "", note: "" },
   newPosition: { name: "", jobId: "kuvar-hr", client: "", city: "", salary: "", eu: false, accommodation: false, food: false, note: "", openings: 1 }
 };
@@ -70,13 +72,28 @@ export function hydrateState(parsed) {
     openPositionFilter: null,
     positionFilterSearch: { jobIds: "", clients: "", cities: "" },
     collapsedCandidateGroups: parsed.collapsedCandidateGroups || {},
+    taskView: normalizeTaskView(parsed.taskView || {}),
+    taskComposerCandidateId: null,
     jobs,
     positions,
     candidates,
-    newTask: { title: "", urgency: 2, due: today(), time: "" },
+    newTask: freshTaskDraft(),
     newJob: { name: "", note: "" },
     newPosition: freshPositionDraft(jobs[0]?.id || "kuvar-hr")
   };
+}
+
+function normalizeTaskView(view) {
+  const groups = new Set(["none", "due", "urgency", "person", "job", "position"]);
+  const sorts = new Set(["due", "urgency", "person", "job", "position"]);
+  return {
+    groupBy: groups.has(view.groupBy) ? view.groupBy : "due",
+    sortBy: sorts.has(view.sortBy) ? view.sortBy : "due"
+  };
+}
+
+export function freshTaskDraft() {
+  return { title: "", urgency: 2, due: today(), time: "" };
 }
 
 export function freshPositionDraft(jobId = "kuvar-hr") {
@@ -126,10 +143,29 @@ function normalizePositionFilters(filters) {
 }
 
 function normalizeCandidate(candidate) {
+  const {
+    id = "",
+    name = "",
+    phone = "",
+    source = "",
+    jobId = "",
+    positionId = "",
+    stage = "new-lead",
+    added = "",
+    note = "",
+    tasks = []
+  } = candidate;
   return {
-    positionId: "",
-    ...candidate,
-    tasks: (candidate.tasks || []).map((task) => normalizeTask(task))
+    id,
+    name,
+    phone,
+    source,
+    jobId,
+    positionId,
+    stage,
+    added,
+    note,
+    tasks: tasks.map((task) => normalizeTask(task))
   };
 }
 

@@ -186,7 +186,7 @@ function renderPositionComposer() {
 function renderPositionStage(id, label, color) {
   const positions = visiblePositions().filter((position) => position.stage === id);
   return `
-    <section class="stage-column">
+    <section class="stage-column position-stage position-stage-${id}">
       <div class="stage-title">
         <span class="dot" style="background:${color}"></span>
         <span>${label}</span>
@@ -245,4 +245,3 @@ function positionTextField(position, key, label, iconName) {
     </div>
   `;
 }
-

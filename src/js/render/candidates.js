@@ -23,6 +23,7 @@ export function renderCandidateModal(candidate) {
     return `${a.due || ""} ${a.time || ""}`.localeCompare(`${b.due || ""} ${b.time || ""}`);
   });
   const openCount = candidate.tasks.filter((task) => !task.done).length;
+  const composerOpen = state.taskComposerCandidateId === candidate.id;
   return `
     <div class="overlay" data-modal-overlay="candidate">
       <article class="candidate-modal">
@@ -67,10 +68,13 @@ export function renderCandidateModal(candidate) {
           </label>
           <div class="task-heading">
             <h2>Tasks</h2><span>${openCount} open</span>
+            <button class="task-heading-action ${composerOpen ? "cancel" : ""}" data-toggle-task-composer="${candidate.id}">
+              ${icon(composerOpen ? "x" : "plus")} ${composerOpen ? "Cancel" : "Add task"}
+            </button>
           </div>
-          ${renderTaskComposer(candidate)}
+          ${composerOpen ? renderTaskComposer(candidate) : ""}
           <div class="tasks">
-            ${sortedTasks.map((task) => renderTask(candidate, task)).join("") || `<div class="empty-tasks">No tasks yet. Add the next action above.</div>`}
+            ${sortedTasks.map((task) => renderTask(candidate, task)).join("") || `<div class="empty-tasks">No tasks yet.</div>`}
           </div>
         </div>
       </article>
@@ -161,4 +165,3 @@ function candidateField(candidate, key, label, iconName) {
     </div>
   `;
 }
-

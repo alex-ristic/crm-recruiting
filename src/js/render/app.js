@@ -4,6 +4,7 @@ import { bindEvents } from "../events.js";
 import { renderCandidatesBoard, renderCandidateModal } from "./candidates.js";
 import { renderJobs, renderPositionModal, renderPositionsBoard } from "./jobs.js";
 import { renderRail, renderTopbar } from "./common.js";
+import { renderTasksBoard } from "./tasks.js";
 
 export function renderApp() {
   const selected = state.candidates.find((candidate) => candidate.id === state.selectedId);
@@ -15,7 +16,7 @@ export function renderApp() {
         ${renderTopbar()}
         ${renderCurrentTab()}
       </main>
-      ${selected && state.activeTab === "candidates" ? renderCandidateModal(selected) : ""}
+      ${selected && ["candidates", "tasks"].includes(state.activeTab) ? renderCandidateModal(selected) : ""}
       ${selectedPosition && state.activeTab === "positions" ? renderPositionModal(selectedPosition) : ""}
     </div>
   `;
@@ -25,8 +26,8 @@ export function renderApp() {
 }
 
 function renderCurrentTab() {
+  if (state.activeTab === "tasks") return renderTasksBoard();
   if (state.activeTab === "positions") return renderPositionsBoard();
   if (state.activeTab === "jobs") return renderJobs();
   return renderCandidatesBoard();
 }
-

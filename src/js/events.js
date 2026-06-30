@@ -25,14 +25,17 @@ import {
   clearTaskTime,
   deleteTask,
   quickAction,
+  setNewTaskDueShortcut,
+  setTaskDueShortcut,
   toggleTask,
+  toggleTaskComposer,
   updateNewTaskDate,
   updateNewTaskTime,
   updateNewTaskTitle,
   updateNewTaskUrgency,
   updateTask
 } from "./actions/tasks.js";
-import { closeModals, logoutCurrentUser, switchTab, toggleJobComposer, togglePositionComposer, updateSearch } from "./actions/ui.js";
+import { closeModals, logoutCurrentUser, switchTab, toggleJobComposer, togglePositionComposer, updateSearch, updateTaskView } from "./actions/ui.js";
 
 let pointerDrag = null;
 let suppressClick = null;
@@ -66,6 +69,8 @@ export function bindEvents() {
     setState({ selectedPositionId: card.dataset.openPosition });
   }));
   app.querySelectorAll("[data-open-candidate-from-position]").forEach((button) => button.addEventListener("click", () => setState({ selectedId: button.dataset.openCandidateFromPosition, selectedPositionId: null, activeTab: "candidates" })));
+  app.querySelectorAll("[data-open-candidate-from-task]").forEach((button) => button.addEventListener("click", () => setState({ selectedId: button.dataset.openCandidateFromTask, selectedPositionId: null })));
+  app.querySelectorAll("[data-task-view]").forEach((input) => input.addEventListener("change", updateTaskView));
   app.querySelector("[data-add='candidate']")?.addEventListener("click", addCandidate);
   app.querySelectorAll("[data-toggle-candidate-group]").forEach((button) => button.addEventListener("click", () => toggleCandidateGroup(button.dataset.toggleCandidateGroup)));
   app.querySelectorAll("[data-next-candidate-stage]").forEach((button) => button.addEventListener("click", () => moveCandidateToNextStage(button.dataset.nextCandidateStage)));
@@ -111,17 +116,33 @@ export function bindEvents() {
   app.querySelectorAll("[data-candidate-field]").forEach((input) => input.addEventListener("input", updateCandidate));
   app.querySelectorAll("[data-candidate-field]").forEach((input) => input.addEventListener("change", updateCandidate));
   app.querySelector("[data-new-task-title]")?.addEventListener("input", updateNewTaskTitle);
+  app.querySelector("[data-toggle-task-composer]")?.addEventListener("click", (event) => toggleTaskComposer(event.currentTarget.dataset.toggleTaskComposer));
   app.querySelector("[data-new-task-date]")?.addEventListener("input", updateNewTaskDate);
   app.querySelector("[data-new-task-time]")?.addEventListener("input", updateNewTaskTime);
+  app.querySelectorAll("[data-new-task-due-shortcut]").forEach((button) => button.addEventListener("click", () => setNewTaskDueShortcut(Number(button.dataset.newTaskDueShortcut))));
   app.querySelector("[data-clear-new-task-time]")?.addEventListener("click", clearNewTaskTime);
   app.querySelectorAll("[data-new-urgency]").forEach((button) => button.addEventListener("click", () => updateNewTaskUrgency(Number(button.dataset.newUrgency))));
   app.querySelector("[data-add-task]")?.addEventListener("click", (event) => addTask(event.currentTarget.dataset.addTask));
   app.querySelectorAll("[data-task-field]").forEach((input) => input.addEventListener("input", updateTask));
   app.querySelectorAll("[data-task-field]").forEach((input) => input.addEventListener("change", updateTask));
+  app.querySelectorAll("[data-task-date-display]").forEach((chip) => chip.addEventListener("click", openTaskDatePicker));
+  app.querySelectorAll("[data-task-due-shortcut]").forEach((button) => button.addEventListener("click", setTaskDueShortcut));
   app.querySelectorAll("[data-clear-task-time]").forEach((button) => button.addEventListener("click", clearTaskTime));
   app.querySelectorAll("[data-delete-task]").forEach((button) => button.addEventListener("click", deleteTask));
   app.querySelectorAll("[data-toggle-task]").forEach((button) => button.addEventListener("click", toggleTask));
   app.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", quickAction));
+}
+
+function openTaskDatePicker(event) {
+  const input = event.currentTarget.querySelector("input[type='date']");
+  if (!input) return;
+  event.preventDefault();
+  input.focus();
+  if (typeof input.showPicker === "function") {
+    input.showPicker();
+    return;
+  }
+  input.click();
 }
 
 function handleDragStart(event) {
@@ -134,7 +155,8 @@ function handleDragStart(event) {
 }
 
 function handlePointerDragStart(event) {
-  if (event.button !== 0 || event.target.closest("select, input, textarea, button, [data-delete-candidate]")) return;
+  const interactive = event.target.closest("select, input, textarea, button, [data-delete-candidate]");
+  if (event.button !== 0 || (interactive && interactive !== event.currentTarget)) return;
   pointerDrag = {
     type: event.currentTarget.dataset.dragType,
     id: event.currentTarget.dataset.dragId,
@@ -173,7 +195,7 @@ function handlePointerDragEnd(event) {
   const zone = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-drop-type][data-drop-stage]");
   if (!zone || zone.dataset.dropType !== drag.type) return;
   if (drag.type === "candidate") moveCandidateToStage(drag.id, zone.dataset.dropStage);
-  if (drag.type === "position") movePositionToStage(drag.id, zone.dataset.dropStage);
+  if (drag.type === "position") movePositionToStage(drag.id, zone.dataset.dropStage, positionDropBeforeId(zone, event.clientX, event.clientY, drag.id));
 }
 
 function handleDragEnd(event) {
@@ -202,5 +224,35 @@ function handleDrop(event) {
   const stage = event.currentTarget.dataset.dropStage;
   if (payload.type !== event.currentTarget.dataset.dropType) return;
   if (payload.type === "candidate") moveCandidateToStage(payload.id, stage);
-  if (payload.type === "position") movePositionToStage(payload.id, stage);
+  if (payload.type === "position") movePositionToStage(payload.id, stage, positionDropBeforeId(event.currentTarget, event.clientX, event.clientY, payload.id));
+}
+
+function positionDropBeforeId(zone, clientX, clientY, draggedId) {
+  const cards = Array.from(zone.querySelectorAll("[data-drag-type='position'][data-drag-id]"))
+    .filter((card) => card.dataset.dragId !== draggedId)
+    .map((card) => ({ card, rect: card.getBoundingClientRect() }))
+    .sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left);
+  if (!cards.length) return null;
+
+  const rowTolerance = 8;
+  const rows = cards.reduce((groups, item) => {
+    const row = groups.find((group) => Math.abs(group.top - item.rect.top) <= rowTolerance);
+    if (row) {
+      row.items.push(item);
+      row.bottom = Math.max(row.bottom, item.rect.bottom);
+      return groups;
+    }
+    groups.push({ top: item.rect.top, bottom: item.rect.bottom, items: [item] });
+    return groups;
+  }, []);
+
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (clientY > row.bottom) continue;
+    const rowItems = row.items.sort((a, b) => a.rect.left - b.rect.left);
+    const before = rowItems.find((item) => clientX < item.rect.left + item.rect.width / 2);
+    if (before) return before.card.dataset.dragId;
+    return rows[index + 1]?.items.sort((a, b) => a.rect.left - b.rect.left)[0]?.card.dataset.dragId || null;
+  }
+  return null;
 }
