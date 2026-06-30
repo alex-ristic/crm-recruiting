@@ -1,0 +1,20 @@
+[Unit]
+Description=Recruiting CRM
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/crm-recruiting
+EnvironmentFile=/etc/crm-recruiting.env
+ExecStart=/opt/crm-recruiting/.venv/bin/python -u server.py
+Restart=on-failure
+RestartSec=5
+User=crm-recruiting
+Group=crm-recruiting
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/crm-recruiting
+
+[Install]
+WantedBy=multi-user.target

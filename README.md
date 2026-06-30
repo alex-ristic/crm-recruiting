@@ -59,3 +59,7 @@ The browser also keeps a localStorage fallback. The backend API contract is:
 ## Local-Only Notice
 
 For online use, read `VPS_DEPLOYMENT.md` and `VPS_BACKUP.md` first. Keep `crm-state.json`, `.env`, and `/etc/crm-recruiting.env` out of git.
+
+## Deploying With OpenClaw On VPS
+
+Give OpenClaw the GitHub repository link and point it to `OPENCLOW_DEPLOYMENT.md`. That guide explains the expected VPS setup, production env file, systemd service, Nginx reverse proxy, HTTPS, updates, backups, restores, and rollback steps.
