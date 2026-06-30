@@ -8,6 +8,7 @@ import urllib.parse
 import http.cookiejar
 from dataclasses import replace
 from pathlib import Path
+from unittest.mock import patch
 
 from crm.auth import hash_password
 from crm.app import create_server
@@ -71,6 +72,31 @@ class ServerSmokeTest(unittest.TestCase):
             urllib.request.urlopen(request, timeout=5)
 
         self.assertEqual(error.exception.code, 400)
+
+    def test_large_payload_returns_400(self):
+        settings = replace(self.settings, max_state_bytes=20)
+        server = create_server(
+            settings=settings,
+            storage=JsonStateStorage(self.state_file),
+        )
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        host, port = server.server_address
+        try:
+            request = urllib.request.Request(
+                f"http://{host}:{port}/api/state",
+                data=b'{"jobs":[],"positions":[],"candidates":[]}',
+                method="POST",
+                headers={"Content-Type": "application/json"},
+            )
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                urllib.request.urlopen(request, timeout=5)
+            self.assertEqual(error.exception.code, 400)
+            self.assertFalse(self.state_file.exists())
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
 
     def test_invalid_state_is_rejected_without_overwrite(self):
         valid = self._post_json("/api/state", {"activeTab": "positions", "jobs": [], "positions": [], "candidates": []})["state"]
@@ -176,6 +202,22 @@ class ServerSmokeTest(unittest.TestCase):
                 server.shutdown()
                 server.server_close()
                 thread.join(timeout=2)
+
+    def test_deployment_env_aliases_are_supported(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            state_path = Path(temp_dir) / "alias-state.json"
+            with patch.dict("os.environ", {
+                "HOST": "127.0.0.2",
+                "PORT": "9090",
+                "CRM_STATE_PATH": str(state_path),
+                "CRM_ENV": "production",
+            }, clear=True):
+                settings = load_settings(load_dotenv_file=False)
+
+        self.assertEqual(settings.environment, "production")
+        self.assertEqual(settings.host, "127.0.0.2")
+        self.assertEqual(settings.port, 9090)
+        self.assertEqual(settings.state_file, state_path)
 
     def _get_text(self, path):
         with urllib.request.urlopen(f"{self.base_url}{path}", timeout=5) as response:

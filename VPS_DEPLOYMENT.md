@@ -37,6 +37,7 @@ Create `/etc/crm-recruiting.env`:
 ```bash
 CRM_HOST=127.0.0.1
 CRM_PORT=8000
+CRM_ENV=production
 CRM_STATE_FILE=/var/lib/crm-recruiting/crm-state.json
 CRM_BACKUP_DIR=/var/lib/crm-recruiting/backups
 CRM_MAX_BACKUPS=50
@@ -47,6 +48,8 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD_HASH=REPLACE_WITH_HASH
 SESSION_SECRET=REPLACE_WITH_RANDOM_SECRET
 ```
+
+The app also accepts `HOST`, `PORT`, and `CRM_STATE_PATH` as aliases, but the `CRM_*` names above are preferred for clarity.
 
 Generate password hash:
 
@@ -159,4 +162,3 @@ sudo certbot --nginx -d crm.example.com
 - Data in `/var/lib/crm-recruiting/`, not git
 - Backups enabled and not web-served
 - Nginx HTTPS enabled
-
