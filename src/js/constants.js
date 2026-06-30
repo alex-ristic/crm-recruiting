@@ -17,6 +17,7 @@ export const positionStages = [
   ["trial-starting", "Trial Starting", "#ca8a04"],
   ["trial", "Trial", "#eab308"],
   ["closed-won", "Closed Won", "#16a34a"],
+  ["wait", "Wait", "#f59e0b"],
   ["closed-lost", "Closed Lost", "#dc2626"]
 ];
 
@@ -51,4 +52,3 @@ export const defaultPositions = [
 
 export const placeholderPositionIds = new Set(["kuvar-momento", "konobar-adria", "kuvar-miramar", "sobarica-alpine"]);
 export const placeholderCandidateIds = new Set(["maya", "tomas", "aisha", "sofia", "noah", "marco"]);
-
