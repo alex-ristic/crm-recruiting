@@ -103,7 +103,7 @@ sudo systemctl start crm-recruiting
 
 1. Provision a fresh VPS.
 2. Clone the GitHub repo into `/opt/crm-recruiting/`.
-3. Follow `OPENCLOW_DEPLOYMENT.md` through package install, virtualenv setup, `/etc/crm-recruiting.env`, systemd, Nginx, and HTTPS.
+3. Follow `OPENCLAW_DEPLOYMENT.md` through package install, virtualenv setup, `/etc/crm-recruiting.env`, systemd, Nginx, and HTTPS.
 4. Stop the service:
 
 ```bash
