@@ -149,6 +149,7 @@ function placementCandidateGroups(candidates) {
 }
 
 function renderCandidateCard(candidate, color, stageId) {
+  const showStartDate = shouldShowStartDate(stageId) && candidate.startDate;
   return `
     <button class="candidate-card ${candidate.id === state.selectedId ? "selected" : ""}" data-open-candidate="${candidate.id}" draggable="true" data-drag-type="candidate" data-drag-id="${candidate.id}">
       <div class="card-row">
@@ -156,12 +157,16 @@ function renderCandidateCard(candidate, color, stageId) {
         <span class="card-name">${candidate.name}</span>
       </div>
       <div class="card-meta">${candidate.phone || "No phone number"}</div>
-      ${candidate.experience ? `<div class="card-sub">${escapeHtml(candidate.experience)}</div>` : ""}
-      ${candidate.whenStart ? `<div class="card-sub">When start: ${escapeHtml(candidate.whenStart)}</div>` : ""}
-      ${candidate.startDate ? `<div class="card-sub">Start date: ${escapeHtml(compactDateLabel(candidate.startDate))}</div>` : ""}
       ${isPlacementGroupedStage(stageId) ? `<div class="card-sub">${jobName(candidate.jobId)}</div>` : ""}
+      ${showStartDate ? `<div class="card-sub">Start date: ${escapeHtml(compactDateLabel(candidate.startDate))}</div>` : ""}
     </button>
   `;
+}
+
+function shouldShowStartDate(stageId) {
+  const trialStartingIndex = candidateStages.findIndex(([id]) => id === "trial-starting");
+  const currentIndex = candidateStages.findIndex(([id]) => id === stageId);
+  return trialStartingIndex >= 0 && currentIndex >= trialStartingIndex;
 }
 
 function candidateField(candidate, key, label, iconName, type = "text") {
