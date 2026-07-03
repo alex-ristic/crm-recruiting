@@ -37,6 +37,12 @@ export function isFutureDate(value) {
   return dayDiff(date, parseDateInput(today())) > 0;
 }
 
+export function isAtLeastDaysAgo(value, days) {
+  const date = parseDateInput(value);
+  if (!date) return false;
+  return dayDiff(parseDateInput(today()), date) >= days;
+}
+
 function parseDateInput(value) {
   if (!value) return null;
   const [year, month, day] = String(value).split("-").map(Number);

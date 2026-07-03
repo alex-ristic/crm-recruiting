@@ -5,7 +5,9 @@ import {
   placeholderCandidateIds,
   placeholderPositionIds
 } from "./constants.js";
-import { today } from "./utils/dates.js";
+import { isAtLeastDaysAgo, today } from "./utils/dates.js";
+
+const automaticTaskStages = new Set(["in-work", "negotiation-1", "negotiation-2", "sent"]);
 
 export const defaultState = {
   activeTab: "tasks",
@@ -64,7 +66,7 @@ export function hydrateState(parsed) {
       ...candidate,
       positionId: placeholderPositionIds.has(candidate.positionId) ? "" : candidate.positionId
     }));
-  return {
+  const nextState = {
     ...structuredClone(defaultState),
     ...parsed,
     selectedPositionId: null,
@@ -85,6 +87,7 @@ export function hydrateState(parsed) {
     newJob: { name: "", note: "" },
     newPosition: freshPositionDraft(jobs[0]?.id || "kuvar-hr")
   };
+  return applyAutomaticCandidateTasks(nextState);
 }
 
 function normalizeTaskView(view) {
@@ -122,13 +125,13 @@ export function saveState() {
 
 export function setState(patch) {
   beforeRenderCallback();
-  state = { ...state, ...patch };
+  state = applyAutomaticCandidateTasks({ ...state, ...patch });
   saveState();
   renderCallback();
 }
 
 export function setStateQuiet(patch) {
-  state = { ...state, ...patch };
+  state = applyAutomaticCandidateTasks({ ...state, ...patch });
   saveState();
 }
 
@@ -159,6 +162,7 @@ function normalizeCandidate(candidate) {
     jobId = "",
     positionId = "",
     stage = "new-lead",
+    lastActivityAt = today(),
     added = "",
     note = "",
     tasks = []
@@ -173,11 +177,17 @@ function normalizeCandidate(candidate) {
     startDate,
     jobId,
     positionId,
-    stage,
+    stage: normalizeCandidateStage(stage),
+    lastActivityAt,
     added,
     note,
     tasks: tasks.map((task) => normalizeTask(task))
   };
+}
+
+function normalizeCandidateStage(stage) {
+  if (stage === "negotiation") return "negotiation-1";
+  return stage;
 }
 
 function normalizeTask(task) {
@@ -206,5 +216,23 @@ function normalizePosition(position) {
     ...normalized,
     openGroup: normalized.stage === "open" ? normalized.openGroup || "" : "",
     headlineOverrides: { city: null, client: null, job: null, ...(position.headlineOverrides || {}) }
+  };
+}
+
+function applyAutomaticCandidateTasks(nextState) {
+  return {
+    ...nextState,
+    candidates: (nextState.candidates || []).map((candidate) => {
+      if (!automaticTaskStages.has(candidate.stage)) return candidate;
+      if ((candidate.tasks || []).some((task) => !task.done)) return candidate;
+      if (!isAtLeastDaysAgo(candidate.lastActivityAt, 2)) return candidate;
+      return {
+        ...candidate,
+        tasks: [
+          ...(candidate.tasks || []),
+          { id: `auto-check-lead-${candidate.id}-${Date.now()}`, title: "Check lead", urgency: 3, due: today(), time: "", done: false, note: "" }
+        ]
+      };
+    })
   };
 }

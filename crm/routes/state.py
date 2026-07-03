@@ -62,6 +62,7 @@ def strip_removed_fields(payload):
         "experience",
         "id",
         "jobId",
+        "lastActivityAt",
         "name",
         "note",
         "phone",

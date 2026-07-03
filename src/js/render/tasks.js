@@ -109,6 +109,7 @@ function renderTaskRow(candidate, task) {
     <button class="task-tab-card u${task.urgency || 4}" data-open-candidate-from-task="${candidate.id}">
       <span class="task-tab-title">${escapeHtml(task.title)}</span>
       <span class="task-tab-person">${escapeHtml(candidate.name)}</span>
+      <span class="task-tab-phone">${escapeHtml(candidate.phone || "No phone")}</span>
       <span class="task-tab-experience">${escapeHtml(candidate.experience || "No experience")}</span>
       <span class="task-tab-start">${escapeHtml(candidate.whenStart || "No start")}</span>
       <span class="task-tab-assignment">${escapeHtml(assignment)}</span>

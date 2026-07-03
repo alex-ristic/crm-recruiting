@@ -5,6 +5,8 @@ import { compactDateLabel } from "../utils/dates.js";
 import { escapeAttr, escapeHtml, icon, initials } from "../utils/formatting.js";
 import { renderTask, renderTaskComposer } from "./tasks.js";
 
+const assignablePositionStages = new Set(["open", "sent", "trial-starting", "trial", "wait"]);
+
 export function renderCandidatesBoard() {
   const candidates = visibleCandidates();
   return `
@@ -61,7 +63,7 @@ export function renderCandidateModal(candidate) {
               <span>${icon("briefcase")}</span><label>Position</label>
               <select data-candidate-field="${candidate.id}:positionId">
                 <option value="" ${candidate.positionId ? "" : "selected"}>No position</option>
-                ${state.positions.map((position) => `<option value="${position.id}" ${candidate.positionId === position.id ? "selected" : ""}>${escapeHtml(positionCardTitle(position))}</option>`).join("")}
+                ${assignablePositions(candidate).map((position) => `<option value="${position.id}" ${candidate.positionId === position.id ? "selected" : ""}>${escapeHtml(positionCardTitle(position))}</option>`).join("")}
               </select>
             </div>
             ${candidateField(candidate, "startDate", "Start date", "calendar", "date")}
@@ -146,6 +148,13 @@ function placementCandidateGroups(candidates) {
     groups.get(id).candidates.push(candidate);
   });
   return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function assignablePositions(candidate) {
+  return state.positions.filter((position) =>
+    position.jobId === candidate.jobId &&
+    assignablePositionStages.has(position.stage)
+  );
 }
 
 function renderCandidateCard(candidate, color, stageId) {

@@ -1,7 +1,9 @@
 export const candidateStages = [
   ["new-lead", "New Lead", "#0052ff"],
-  ["in-work", "In Work", "#d97706"],
-  ["negotiation", "Negotiation", "#7c3aed"],
+  ["in-work", "No Answer", "#d97706"],
+  ["negotiation-1", "In Work", "#7c3aed"],
+  ["negotiation-2", "Negotiation", "#6d28d9"],
+  ["potential", "Potential", "#0d9488"],
   ["good-to-place", "Good to Place", "#0891b2"],
   ["sent", "Sent", "#2563eb"],
   ["trial-starting", "Trial Starting", "#ca8a04"],
