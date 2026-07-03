@@ -1,4 +1,4 @@
-import { positionStages } from "../constants.js";
+import { openPositionGroups, positionStages } from "../constants.js";
 import { state } from "../state.js";
 import {
   headlineInputValue,
@@ -185,18 +185,48 @@ function renderPositionComposer() {
 
 function renderPositionStage(id, label, color) {
   const positions = visiblePositions().filter((position) => position.stage === id);
+  const openExpanded = id === "open" && state.showOpenPositionGroups;
   return `
-    <section class="stage-column position-stage position-stage-${id}">
+    <section class="stage-column position-stage position-stage-${id} ${openExpanded ? "open-groups-expanded" : ""}">
       <div class="stage-title">
         <span class="dot" style="background:${color}"></span>
         <span>${label}</span>
+        ${id === "open" ? `<button class="open-group-toggle ${openExpanded ? "active" : ""}" data-toggle-open-position-groups title="${openExpanded ? "Hide Open groups" : "Show Open groups"}">${icon("check")}</button>` : ""}
         <b>${positions.length}</b>
       </div>
-      <div class="stage-list" data-drop-type="position" data-drop-stage="${id}">
-        ${positions.map((position) => renderPositionCard(position, color)).join("") || `<div class="empty-stage">No positions</div>`}
-      </div>
+      ${openExpanded ? renderOpenPositionGroups(positions, color) : `
+        <div class="stage-list" data-drop-type="position" data-drop-stage="${id}">
+          ${positions.map((position) => renderPositionCard(position, color)).join("") || `<div class="empty-stage">No positions</div>`}
+        </div>
+      `}
     </section>
   `;
+}
+
+function renderOpenPositionGroups(positions, color) {
+  return `
+    <div class="open-groups">
+      ${openPositionGroups.map(([id, label, groupColor]) => {
+        const groupPositions = positions.filter((position) => openGroupForPosition(position) === id);
+        return `
+          <section class="open-group">
+            <div class="open-group-title">
+              <span class="dot" style="background:${groupColor}"></span>
+              <span>${label}</span>
+              <b>${groupPositions.length}</b>
+            </div>
+            <div class="stage-list open-group-list" data-drop-type="position" data-drop-stage="open" data-drop-open-group="${id}">
+              ${groupPositions.map((position) => renderPositionCard(position, color)).join("") || `<div class="empty-stage">No positions</div>`}
+            </div>
+          </section>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function openGroupForPosition(position) {
+  return position.openGroup || "u3";
 }
 
 function renderPositionCard(position, color) {

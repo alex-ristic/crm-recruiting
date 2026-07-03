@@ -32,6 +32,9 @@ svg { width: 100%; height: 100%; }
 .stage-column { width: 230px; flex: 0 0 230px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 .stage-title { display: flex; align-items: center; gap: 8px; padding: 0 4px; font-size: 13px; font-weight: 600; }
 .stage-title b { margin-left: auto; color: #94a3b8; font-size: 12px; font-weight: 500; }
+.open-group-toggle { width: 24px; height: 24px; display: grid; place-items: center; padding: 5px; border: 1px solid #cbd5e1; border-radius: 7px; color: #94a3b8; background: #fff; }
+.open-group-toggle svg { width: 13px; height: 13px; }
+.open-group-toggle.active { color: #16a34a; border-color: #86efac; background: #f0fdf4; }
 .dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; }
 .stage-list { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .stage-list.drop-ready { background: #eef4ff; outline: 2px dashed #99b7ff; outline-offset: 4px; border-radius: 12px; }
@@ -197,6 +200,12 @@ textarea { resize: vertical; }
 .positions-board .stage-column { width: 345px; flex-basis: 345px; }
 .positions-board .position-stage-open { width: 702px; flex-basis: 702px; }
 .positions-board .position-stage-open .stage-list { display: grid; grid-template-columns: repeat(2, 345px); align-content: start; }
+.positions-board .position-stage-open.open-groups-expanded { width: 1434px; flex-basis: 1434px; }
+.open-groups { min-height: 0; flex: 1; display: grid; grid-template-columns: repeat(4, 345px); gap: 14px; }
+.open-group { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.open-group-title { height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 6px; color: #475569; font-size: 12px; font-weight: 800; }
+.open-group-title b { margin-left: auto; color: #94a3b8; font-size: 12px; font-weight: 700; }
+.positions-board .position-stage-open .open-group-list { display: flex; flex-direction: column; gap: 10px; }
 .position-board-card .card-row { align-items: flex-start; }
 .position-board-card .card-name { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; }
 .square-avatar { border-radius: 9px; padding: 7px; }
@@ -229,4 +238,6 @@ textarea { resize: vertical; }
   .position-composer { flex-wrap: wrap; }
   .position-filters { flex-wrap: wrap; }
   .filter-clear { margin-left: 0; }
+  .positions-board .position-stage-open.open-groups-expanded { width: 345px; flex-basis: 345px; }
+  .open-groups { grid-template-columns: 345px; }
 }

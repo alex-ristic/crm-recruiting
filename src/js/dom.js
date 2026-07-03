@@ -35,8 +35,10 @@ export function restoreScrollState(state) {
       board.scrollTop = snapshot.boardTop;
     }
     snapshot.stages.forEach((item) => {
-      const [type, stage] = item.key.split(":");
-      const list = app.querySelector(`[data-drop-type="${type}"][data-drop-stage="${stage}"]`);
+      const selector = item.group
+        ? `[data-drop-type="${item.type}"][data-drop-stage="${item.stage}"][data-drop-open-group="${item.group}"]`
+        : `[data-drop-type="${item.type}"][data-drop-stage="${item.stage}"]:not([data-drop-open-group])`;
+      const list = app.querySelector(selector);
       if (!list) return;
       list.scrollTop = item.top;
       list.scrollLeft = item.left;
@@ -54,10 +56,11 @@ function captureScrollState(state) {
     boardTop: board?.scrollTop || 0,
     modalTop: app.querySelector(".modal-body")?.scrollTop || 0,
     stages: Array.from(app.querySelectorAll("[data-drop-type][data-drop-stage]")).map((stage) => ({
-      key: `${stage.dataset.dropType}:${stage.dataset.dropStage}`,
+      type: stage.dataset.dropType,
+      stage: stage.dataset.dropStage,
+      group: stage.dataset.dropOpenGroup || "",
       top: stage.scrollTop,
       left: stage.scrollLeft
     }))
   };
 }
-

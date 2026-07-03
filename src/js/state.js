@@ -15,6 +15,7 @@ export const defaultState = {
   positionFilters: { jobIds: [], clients: [], cities: [], eu: false, accommodation: false },
   openPositionFilter: null,
   positionFilterSearch: { jobIds: "", clients: "", cities: "" },
+  showOpenPositionGroups: false,
   collapsedCandidateGroups: {},
   taskView: { groupBy: "due", sortBy: "due" },
   taskComposerCandidateId: null,
@@ -71,6 +72,7 @@ export function hydrateState(parsed) {
     positionFilters,
     openPositionFilter: null,
     positionFilterSearch: { jobIds: "", clients: "", cities: "" },
+    showOpenPositionGroups: !!parsed.showOpenPositionGroups,
     collapsedCandidateGroups: parsed.collapsedCandidateGroups || {},
     taskView: normalizeTaskView(parsed.taskView || {}),
     taskComposerCandidateId: null,
@@ -187,11 +189,13 @@ function normalizePosition(position) {
     url: "",
     note: "",
     openings: 1,
+    openGroup: "",
     headlineOverrides: { city: null, client: null, job: null },
     ...position
   };
   return {
     ...normalized,
+    openGroup: normalized.stage === "open" ? normalized.openGroup || "" : "",
     headlineOverrides: { city: null, client: null, job: null, ...(position.headlineOverrides || {}) }
   };
 }

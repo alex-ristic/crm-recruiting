@@ -21,6 +21,13 @@ export const positionStages = [
   ["closed-lost", "Closed Lost", "#dc2626"]
 ];
 
+export const openPositionGroups = [
+  ["u1", "U1", "#dc2626"],
+  ["u2", "U2", "#b45309"],
+  ["u3", "U3", "#7c3aed"],
+  ["not-mine", "Not Mine", "#64748b"]
+];
+
 export const linkedStageMap = {
   sent: "sent",
   "trial-starting": "trial-starting",

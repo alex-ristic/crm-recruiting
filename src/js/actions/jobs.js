@@ -54,6 +54,10 @@ export function updatePositionFilterOption(event) {
   setState({ openPositionFilter: key, positionFilters: { ...state.positionFilters, [key]: next } });
 }
 
+export function toggleOpenPositionGroups() {
+  setState({ showOpenPositionGroups: !state.showOpenPositionGroups });
+}
+
 export function toggleHeadlinePart(event) {
   const [positionId, key] = event.currentTarget.dataset.toggleHeadlinePart.split(":");
   const position = state.positions.find((item) => item.id === positionId);
@@ -97,7 +101,14 @@ export function updatePosition(event) {
   const [id, key] = event.target.dataset.positionField.split(":");
   const value = event.target.type === "checkbox" ? event.target.checked : key === "openings" ? Number(event.target.value) : event.target.value;
   const oldPosition = state.positions.find((position) => position.id === id);
-  let patch = { positions: state.positions.map((position) => position.id === id ? { ...position, [key]: value } : position) };
+  let patch = {
+    positions: state.positions.map((position) => {
+      if (position.id !== id) return position;
+      const nextPosition = { ...position, [key]: value };
+      if (key === "stage" && value !== "open") nextPosition.openGroup = "";
+      return nextPosition;
+    })
+  };
   if (key === "stage" && value !== "open" && oldPosition && oldPosition.stage !== "open") {
     patch = {
       ...patch,
@@ -128,10 +139,14 @@ export function deletePosition(positionId) {
   });
 }
 
-export function movePositionToStage(positionId, stage, beforePositionId = null) {
+export function movePositionToStage(positionId, stage, beforePositionId = null, openGroup = null) {
   const oldPosition = state.positions.find((position) => position.id === positionId);
   if (!oldPosition) return;
-  const movedPosition = { ...oldPosition, stage };
+  const movedPosition = {
+    ...oldPosition,
+    stage,
+    openGroup: stage === "open" ? openGroup ?? oldPosition.openGroup ?? "" : ""
+  };
   const remainingPositions = state.positions.filter((position) => position.id !== positionId);
   const insertIndex = beforePositionId
     ? remainingPositions.findIndex((position) => position.id === beforePositionId)

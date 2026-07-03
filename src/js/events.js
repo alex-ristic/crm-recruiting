@@ -9,6 +9,7 @@ import {
   deletePosition,
   movePositionToStage,
   toggleHeadlinePart,
+  toggleOpenPositionGroups,
   togglePositionFilter,
   updateHeadlinePart,
   updateJob,
@@ -78,6 +79,7 @@ export function bindEvents() {
   app.querySelector("[data-add='position']")?.addEventListener("click", togglePositionComposer);
   app.querySelector("[data-create-position]")?.addEventListener("click", createPosition);
   app.querySelector("[data-create-job]")?.addEventListener("click", createJob);
+  app.querySelector("[data-toggle-open-position-groups]")?.addEventListener("click", toggleOpenPositionGroups);
   app.querySelectorAll("[data-position-filter]").forEach((input) => input.addEventListener("change", updatePositionFilter));
   app.querySelectorAll("[data-toggle-position-filter]").forEach((button) => button.addEventListener("click", () => togglePositionFilter(button.dataset.togglePositionFilter)));
   app.querySelectorAll("[data-position-filter-search]").forEach((input) => input.addEventListener("input", updatePositionFilterSearch));
@@ -195,7 +197,7 @@ function handlePointerDragEnd(event) {
   const zone = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-drop-type][data-drop-stage]");
   if (!zone || zone.dataset.dropType !== drag.type) return;
   if (drag.type === "candidate") moveCandidateToStage(drag.id, zone.dataset.dropStage);
-  if (drag.type === "position") movePositionToStage(drag.id, zone.dataset.dropStage, positionDropBeforeId(zone, event.clientX, event.clientY, drag.id));
+  if (drag.type === "position") movePositionToStage(drag.id, zone.dataset.dropStage, positionDropBeforeId(zone, event.clientX, event.clientY, drag.id), zone.dataset.dropOpenGroup);
 }
 
 function handleDragEnd(event) {
@@ -224,7 +226,7 @@ function handleDrop(event) {
   const stage = event.currentTarget.dataset.dropStage;
   if (payload.type !== event.currentTarget.dataset.dropType) return;
   if (payload.type === "candidate") moveCandidateToStage(payload.id, stage);
-  if (payload.type === "position") movePositionToStage(payload.id, stage, positionDropBeforeId(event.currentTarget, event.clientX, event.clientY, payload.id));
+  if (payload.type === "position") movePositionToStage(payload.id, stage, positionDropBeforeId(event.currentTarget, event.clientX, event.clientY, payload.id), event.currentTarget.dataset.dropOpenGroup);
 }
 
 function positionDropBeforeId(zone, clientX, clientY, draggedId) {
