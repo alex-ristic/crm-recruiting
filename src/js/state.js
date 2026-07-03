@@ -18,7 +18,7 @@ export const defaultState = {
   showOpenPositionGroups: false,
   collapsedCandidateGroups: {},
   collapsedTaskGroups: {},
-  taskView: { groupBy: "due", sortBy: "due" },
+  taskView: { groupBy: "due", sortBy: "due", includeUpcoming: true },
   taskComposerCandidateId: null,
   showJobComposer: false,
   showPositionComposer: false,
@@ -92,7 +92,8 @@ function normalizeTaskView(view) {
   const sorts = new Set(["due", "urgency", "person", "job", "position"]);
   return {
     groupBy: groups.has(view.groupBy) ? view.groupBy : "due",
-    sortBy: sorts.has(view.sortBy) ? view.sortBy : "due"
+    sortBy: sorts.has(view.sortBy) ? view.sortBy : "due",
+    includeUpcoming: view.includeUpcoming !== false
   };
 }
 

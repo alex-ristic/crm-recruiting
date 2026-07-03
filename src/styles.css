@@ -120,6 +120,8 @@ textarea { resize: vertical; }
 .task-view-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .task-view-bar label { height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; color: #64748b; font-size: 12px; font-weight: 700; }
 .task-view-bar select { border: 0; outline: 0; background: transparent; color: #334155; font-size: 12px; font-weight: 700; }
+.task-view-bar input[type="checkbox"] { width: 14px; height: 14px; margin: 0; accent-color: #0052ff; }
+.task-upcoming-toggle { white-space: nowrap; }
 .task-list-shell { display: flex; flex-direction: column; gap: 14px; }
 .task-group { display: flex; flex-direction: column; gap: 8px; }
 .task-group-title { width: 100%; display: flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; color: #64748b; text-align: left; font-size: 12px; font-weight: 800; }

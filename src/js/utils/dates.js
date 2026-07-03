@@ -31,6 +31,12 @@ export function taskDateGroup(value) {
   return { label: "After month", order: 5 };
 }
 
+export function isFutureDate(value) {
+  const date = parseDateInput(value);
+  if (!date) return false;
+  return dayDiff(date, parseDateInput(today())) > 0;
+}
+
 function parseDateInput(value) {
   if (!value) return null;
   const [year, month, day] = String(value).split("-").map(Number);

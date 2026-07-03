@@ -9,7 +9,8 @@ export function updateSearch(event) {
 
 export function updateTaskView(event) {
   const key = event.target.dataset.taskView;
-  setState({ taskView: { ...state.taskView, [key]: event.target.value } });
+  const value = event.target.type === "checkbox" ? event.target.checked : event.target.value;
+  setState({ taskView: { ...state.taskView, [key]: value } });
 }
 
 export function switchTab(tab) {

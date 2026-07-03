@@ -1,6 +1,6 @@
 import { state } from "../state.js";
 import { jobName, positionName } from "../selectors.js";
-import { compactDateLabel, taskDateGroup } from "../utils/dates.js";
+import { compactDateLabel, isFutureDate, taskDateGroup } from "../utils/dates.js";
 import { escapeAttr, escapeHtml, formatCompletedAt, icon } from "../utils/formatting.js";
 
 export function renderTasksBoard() {
@@ -24,6 +24,7 @@ export function renderTasksBoard() {
           ${taskViewOption("job", "Job", state.taskView.sortBy)}
           ${taskViewOption("position", "Position", state.taskView.sortBy)}
         </select></label>
+        <label class="task-upcoming-toggle"><input data-task-view="includeUpcoming" type="checkbox" ${state.taskView.includeUpcoming ? "checked" : ""} /> Include upcoming tasks</label>
       </div>
       <div class="task-list-shell">
         ${groups.map((group) => renderTaskGroup(group)).join("") || `<div class="empty-tasks">No open tasks.</div>`}
@@ -38,6 +39,7 @@ function candidateTasks() {
     .flatMap((candidate) => (candidate.tasks || []).map((task) => ({ candidate, task })))
     .filter(({ candidate, task }) => {
       if (task.done) return false;
+      if (!state.taskView.includeUpcoming && isFutureDate(task.due)) return false;
       if (!q) return true;
       return [task.title, task.note, task.due, task.time, candidate.name, candidate.phone, candidate.experience, candidate.whenStart, candidate.startDate, jobName(candidate.jobId), positionName(candidate.positionId)]
         .join(" ")
