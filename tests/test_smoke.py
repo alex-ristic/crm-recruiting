@@ -61,9 +61,11 @@ class ServerSmokeTest(unittest.TestCase):
                 "id": "candidate-1",
                 "name": "Candidate One",
                 "stage": "new-lead",
+                "lastActivityAt": "2026-07-03",
                 "experience": "5 seasons",
                 "whenStart": "Immediately",
                 "startDate": "2026-07-15",
+                "legacyRemovedField": "remove me",
                 "tasks": [],
             }],
         }
@@ -74,6 +76,8 @@ class ServerSmokeTest(unittest.TestCase):
         self.assertEqual(response["state"]["candidates"][0]["experience"], "5 seasons")
         self.assertEqual(response["state"]["candidates"][0]["whenStart"], "Immediately")
         self.assertEqual(response["state"]["candidates"][0]["startDate"], "2026-07-15")
+        self.assertEqual(response["state"]["candidates"][0]["lastActivityAt"], "2026-07-03")
+        self.assertNotIn("legacyRemovedField", response["state"]["candidates"][0])
         self.assertEqual(self._get_json("/api/state"), {"state": response["state"]})
 
     def test_bad_json_returns_400(self):

@@ -1,11 +1,9 @@
-import { candidateStages } from "../constants.js";
+import { assignablePositionStages, candidateStages } from "../constants.js";
 import { state } from "../state.js";
 import { jobName, positionCardTitle, positionName, stageMeta, visibleCandidates } from "../selectors.js";
 import { compactDateLabel } from "../utils/dates.js";
 import { escapeAttr, escapeHtml, icon, initials } from "../utils/formatting.js";
 import { renderTask, renderTaskComposer } from "./tasks.js";
-
-const assignablePositionStages = new Set(["open", "sent", "trial-starting", "trial", "wait"]);
 
 export function renderCandidatesBoard() {
   const candidates = visibleCandidates();

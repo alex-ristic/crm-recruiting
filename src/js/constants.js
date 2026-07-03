@@ -38,6 +38,10 @@ export const linkedStageMap = {
   "closed-lost": "closed-lost"
 };
 
+export const assignablePositionStages = new Set(["open", "sent", "trial-starting", "trial", "wait"]);
+
+export const automaticTaskStages = new Set(["in-work", "negotiation-1", "negotiation-2", "sent"]);
+
 export const defaultJobs = [
   { id: "konobar-hr", name: "Konobar HR", note: "Konobari i konobarice za Hrvatsku" },
   { id: "kuvar-hr", name: "Kuvar HR", note: "Kuvari i mladji kuvari za Hrvatsku" },

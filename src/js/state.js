@@ -2,12 +2,11 @@ import { loadServerState, saveServerState } from "./api.js";
 import {
   defaultJobs,
   defaultPositions,
+  automaticTaskStages,
   placeholderCandidateIds,
   placeholderPositionIds
 } from "./constants.js";
 import { isAtLeastDaysAgo, today } from "./utils/dates.js";
-
-const automaticTaskStages = new Set(["in-work", "negotiation-1", "negotiation-2", "sent"]);
 
 export const defaultState = {
   activeTab: "tasks",

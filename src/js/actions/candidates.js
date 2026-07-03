@@ -1,8 +1,6 @@
-import { candidateStages, linkedStageMap } from "../constants.js";
+import { assignablePositionStages, candidateStages, linkedStageMap } from "../constants.js";
 import { state, setState, setStateQuiet } from "../state.js";
 import { today } from "../utils/dates.js";
-
-const assignablePositionStages = new Set(["open", "sent", "trial-starting", "trial", "wait"]);
 
 export function toggleCandidateGroup(key) {
   setState({ collapsedCandidateGroups: { ...state.collapsedCandidateGroups, [key]: !state.collapsedCandidateGroups[key] } });
