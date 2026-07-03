@@ -4,6 +4,10 @@ import { actionLabel } from "../utils/formatting.js";
 import { addDays, completionTimestamp, today } from "../utils/dates.js";
 import { candidateStages } from "../constants.js";
 
+export function toggleTaskGroup(key) {
+  setState({ collapsedTaskGroups: { ...state.collapsedTaskGroups, [key]: !state.collapsedTaskGroups[key] } });
+}
+
 export function updateNewTaskTitle(event) {
   setStateQuiet({ newTask: { ...state.newTask, title: event.target.value } });
 }

@@ -1,6 +1,7 @@
 import { candidateStages } from "../constants.js";
 import { state } from "../state.js";
 import { jobName, positionCardTitle, positionName, stageMeta, visibleCandidates } from "../selectors.js";
+import { compactDateLabel } from "../utils/dates.js";
 import { escapeAttr, escapeHtml, icon, initials } from "../utils/formatting.js";
 import { renderTask, renderTaskComposer } from "./tasks.js";
 
@@ -48,6 +49,8 @@ export function renderCandidateModal(candidate) {
             ${candidateField(candidate, "name", "Name", "users")}
             ${candidateField(candidate, "phone", "Phone number", "phone")}
             ${candidateField(candidate, "source", "Source", "link")}
+            ${candidateField(candidate, "experience", "Experience", "briefcase")}
+            ${candidateField(candidate, "whenStart", "When start", "calendar")}
             <div class="field-row">
               <span>${icon("tag")}</span><label>Job</label>
               <select data-candidate-field="${candidate.id}:jobId">
@@ -61,6 +64,7 @@ export function renderCandidateModal(candidate) {
                 ${state.positions.map((position) => `<option value="${position.id}" ${candidate.positionId === position.id ? "selected" : ""}>${escapeHtml(positionCardTitle(position))}</option>`).join("")}
               </select>
             </div>
+            ${candidateField(candidate, "startDate", "Start date", "calendar", "date")}
           </div>
           <label class="candidate-note">
             <span>${icon("flag")} Candidate note</span>
@@ -152,16 +156,19 @@ function renderCandidateCard(candidate, color, stageId) {
         <span class="card-name">${candidate.name}</span>
       </div>
       <div class="card-meta">${candidate.phone || "No phone number"}</div>
+      ${candidate.experience ? `<div class="card-sub">${escapeHtml(candidate.experience)}</div>` : ""}
+      ${candidate.whenStart ? `<div class="card-sub">When start: ${escapeHtml(candidate.whenStart)}</div>` : ""}
+      ${candidate.startDate ? `<div class="card-sub">Start date: ${escapeHtml(compactDateLabel(candidate.startDate))}</div>` : ""}
       ${isPlacementGroupedStage(stageId) ? `<div class="card-sub">${jobName(candidate.jobId)}</div>` : ""}
     </button>
   `;
 }
 
-function candidateField(candidate, key, label, iconName) {
+function candidateField(candidate, key, label, iconName, type = "text") {
   return `
     <div class="field-row">
       <span>${icon(iconName)}</span><label>${label}</label>
-      <input data-candidate-field="${candidate.id}:${key}" value="${escapeAttr(candidate[key])}" />
+      <input data-candidate-field="${candidate.id}:${key}" type="${type}" value="${escapeAttr(candidate[key])}" />
     </div>
   `;
 }

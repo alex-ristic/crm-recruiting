@@ -30,6 +30,7 @@ import {
   setTaskDueShortcut,
   toggleTask,
   toggleTaskComposer,
+  toggleTaskGroup,
   updateNewTaskDate,
   updateNewTaskTime,
   updateNewTaskTitle,
@@ -72,6 +73,7 @@ export function bindEvents() {
   app.querySelectorAll("[data-open-candidate-from-position]").forEach((button) => button.addEventListener("click", () => setState({ selectedId: button.dataset.openCandidateFromPosition, selectedPositionId: null, activeTab: "candidates" })));
   app.querySelectorAll("[data-open-candidate-from-task]").forEach((button) => button.addEventListener("click", () => setState({ selectedId: button.dataset.openCandidateFromTask, selectedPositionId: null })));
   app.querySelectorAll("[data-task-view]").forEach((input) => input.addEventListener("change", updateTaskView));
+  app.querySelectorAll("[data-toggle-task-group]").forEach((button) => button.addEventListener("click", () => toggleTaskGroup(button.dataset.toggleTaskGroup)));
   app.querySelector("[data-add='candidate']")?.addEventListener("click", addCandidate);
   app.querySelectorAll("[data-toggle-candidate-group]").forEach((button) => button.addEventListener("click", () => toggleCandidateGroup(button.dataset.toggleCandidateGroup)));
   app.querySelectorAll("[data-next-candidate-stage]").forEach((button) => button.addEventListener("click", () => moveCandidateToNextStage(button.dataset.nextCandidateStage)));

@@ -122,21 +122,22 @@ textarea { resize: vertical; }
 .task-view-bar select { border: 0; outline: 0; background: transparent; color: #334155; font-size: 12px; font-weight: 700; }
 .task-list-shell { display: flex; flex-direction: column; gap: 14px; }
 .task-group { display: flex; flex-direction: column; gap: 8px; }
-.task-group-title { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 12px; font-weight: 800; }
+.task-group-title { width: 100%; display: flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; color: #64748b; text-align: left; font-size: 12px; font-weight: 800; }
+.task-group-title strong { font-weight: 800; }
 .task-group-title b { color: #94a3b8; font-weight: 700; }
 .task-group-list { display: flex; flex-direction: column; gap: 8px; }
-.task-tab-card { width: 100%; min-height: 54px; display: grid; grid-template-columns: minmax(240px, 1.5fr) minmax(140px, .8fr) 74px minmax(180px, 1fr) 120px; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid #e2e8f0; border-left: 4px solid currentColor; border-radius: 10px; background: #fff; color: #334155; text-align: left; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+.task-tab-card { width: 100%; min-height: 54px; display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(130px, .75fr) minmax(140px, .8fr) minmax(110px, .65fr) minmax(170px, 1fr) 74px 120px; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid #e2e8f0; border-left: 4px solid currentColor; border-radius: 10px; background: #fff; color: #334155; text-align: left; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
 .task-tab-card:hover { border-color: #bfdbfe; box-shadow: 0 4px 14px rgba(0,82,255,.08); }
 .task-tab-card span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .task-tab-title { color: #0f172a; font-size: 13px; font-weight: 800; }
-.task-tab-date, .task-tab-urgency { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; }
-.task-tab-date svg, .task-tab-urgency svg { width: 13px; height: 13px; flex: 0 0 13px; }
+.task-tab-date, .task-tab-start, .task-tab-urgency { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; }
+.task-tab-date svg, .task-tab-start svg, .task-tab-urgency svg { width: 13px; height: 13px; flex: 0 0 13px; }
 .task-tab-urgency { justify-content: center; height: 26px; padding: 0 9px; border-radius: 999px; }
 .task-tab-card.u1 .task-tab-urgency { color: #dc2626; background: #fee2e2; }
 .task-tab-card.u2 .task-tab-urgency { color: #b45309; background: #fef3c7; }
 .task-tab-card.u3 .task-tab-urgency { color: #7c3aed; background: #f5f3ff; }
 .task-tab-card.u4 .task-tab-urgency { color: #64748b; background: #f1f5f9; }
-.task-tab-person, .task-tab-assignment { color: #64748b; font-size: 12px; font-weight: 700; }
+.task-tab-person, .task-tab-experience, .task-tab-start, .task-tab-assignment { color: #64748b; font-size: 12px; font-weight: 700; }
 .task-card { display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; }
 .task-card.done { opacity: .62; }
 .complete-toggle { width: 20px; height: 20px; flex: 0 0 20px; display: grid; place-items: center; margin-top: 1px; padding: 3px; border: 1.5px solid #cbd5e1; border-radius: 999px; color: #16a34a; background: #fff; }

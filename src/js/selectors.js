@@ -19,7 +19,7 @@ export function visibleCandidates() {
   const q = state.search.trim().toLowerCase();
   if (!q || state.activeTab !== "candidates") return state.candidates;
   return state.candidates.filter((candidate) =>
-    [candidate.name, candidate.phone, candidate.source, jobName(candidate.jobId), positionName(candidate.positionId)]
+    [candidate.name, candidate.phone, candidate.source, candidate.experience, candidate.whenStart, candidate.startDate, jobName(candidate.jobId), positionName(candidate.positionId)]
       .join(" ")
       .toLowerCase()
       .includes(q)

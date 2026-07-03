@@ -8,7 +8,7 @@ export function toggleCandidateGroup(key) {
 export function addCandidate() {
   const jobId = state.jobs[0]?.id || "";
   const id = `candidate-${Date.now()}`;
-  const candidate = { id, name: "New Candidate", phone: "", source: "Manual", jobId, positionId: "", stage: "new-lead", added: "Just added", note: "", tasks: [] };
+  const candidate = { id, name: "New Candidate", phone: "", source: "Manual", experience: "", whenStart: "", startDate: "", jobId, positionId: "", stage: "new-lead", added: "Just added", note: "", tasks: [] };
   setState({ candidates: [candidate, ...state.candidates], selectedId: id, activeTab: "candidates" });
 }
 

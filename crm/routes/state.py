@@ -59,6 +59,7 @@ def strip_removed_fields(payload):
         return
     allowed_candidate_fields = {
         "added",
+        "experience",
         "id",
         "jobId",
         "name",
@@ -66,8 +67,10 @@ def strip_removed_fields(payload):
         "phone",
         "positionId",
         "source",
+        "startDate",
         "stage",
         "tasks",
+        "whenStart",
     }
     for candidate in candidates:
         if isinstance(candidate, dict):

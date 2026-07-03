@@ -21,13 +21,14 @@ export function compactDateLabel(value) {
 
 export function taskDateGroup(value) {
   const date = parseDateInput(value);
-  if (!date) return { label: "After month", order: 4 };
+  if (!date) return { label: "After month", order: 5 };
   const diff = dayDiff(date, parseDateInput(today()));
-  if (diff <= 0) return { label: "Today", order: 0 };
-  if (diff === 1) return { label: "Tomorrow", order: 1 };
-  if (diff <= 7) return { label: "Next 7 days", order: 2 };
-  if (diff <= 31) return { label: "Next month", order: 3 };
-  return { label: "After month", order: 4 };
+  if (diff === 0) return { label: "Today", order: 0 };
+  if (diff < 0) return { label: "Overdue", order: 1 };
+  if (diff === 1) return { label: "Tomorrow", order: 2 };
+  if (diff <= 7) return { label: "Next 7 days", order: 3 };
+  if (diff <= 31) return { label: "Next month", order: 4 };
+  return { label: "After month", order: 5 };
 }
 
 function parseDateInput(value) {

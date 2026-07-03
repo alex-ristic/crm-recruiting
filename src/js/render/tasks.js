@@ -39,7 +39,7 @@ function candidateTasks() {
     .filter(({ candidate, task }) => {
       if (task.done) return false;
       if (!q) return true;
-      return [task.title, task.note, task.due, task.time, candidate.name, candidate.phone, jobName(candidate.jobId), positionName(candidate.positionId)]
+      return [task.title, task.note, task.due, task.time, candidate.name, candidate.phone, candidate.experience, candidate.whenStart, candidate.startDate, jobName(candidate.jobId), positionName(candidate.positionId)]
         .join(" ")
         .toLowerCase()
         .includes(q);
@@ -84,12 +84,18 @@ function groupMeta({ candidate, task }, groupBy) {
 }
 
 function renderTaskGroup(group) {
+  const key = `${state.taskView.groupBy}:${group.key}`;
+  const collapsed = !!state.collapsedTaskGroups[key];
   return `
     <section class="task-group">
-      <div class="task-group-title"><span>${escapeHtml(group.label)}</span><b>${group.tasks.length}</b></div>
-      <div class="task-group-list">
+      <button class="task-group-title" data-toggle-task-group="${escapeAttr(key)}">
+        <span class="chevron">${collapsed ? "›" : "⌄"}</span>
+        <strong>${escapeHtml(group.label)}</strong>
+        <b>${group.tasks.length}</b>
+      </button>
+      ${collapsed ? "" : `<div class="task-group-list">
         ${group.tasks.map(({ candidate, task }) => renderTaskRow(candidate, task)).join("")}
-      </div>
+      </div>`}
     </section>
   `;
 }
@@ -101,8 +107,10 @@ function renderTaskRow(candidate, task) {
     <button class="task-tab-card u${task.urgency || 4}" data-open-candidate-from-task="${candidate.id}">
       <span class="task-tab-title">${escapeHtml(task.title)}</span>
       <span class="task-tab-person">${escapeHtml(candidate.name)}</span>
-      <span class="task-tab-urgency">${icon("flag")}U${task.urgency || 4}</span>
+      <span class="task-tab-experience">${escapeHtml(candidate.experience || "No experience")}</span>
+      <span class="task-tab-start">${escapeHtml(candidate.whenStart || "No start")}</span>
       <span class="task-tab-assignment">${escapeHtml(assignment)}</span>
+      <span class="task-tab-urgency">${icon("flag")}U${task.urgency || 4}</span>
       <span class="task-tab-date">${icon("calendar")}${escapeHtml(taskDate(task))}</span>
     </button>
   `;
