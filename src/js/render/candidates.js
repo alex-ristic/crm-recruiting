@@ -124,23 +124,56 @@ function renderCandidateGroups(stageId, candidates, color) {
           ${group.euLabel ? `<span class="eu-sticker ${group.eu ? "eu" : "non-eu"}">${group.euLabel}</span>` : ""}
           <em>${group.candidates.length}</em>
         </button>
-        ${collapsed ? "" : `<div class="job-group-list">${group.candidates.map((candidate) => renderCandidateCard(candidate, color, stageId)).join("")}</div>`}
+        ${collapsed ? "" : renderCandidateGroupBody(group, key, color, stageId)}
       </div>
     `;
   }).join("");
 }
 
+function renderCandidateGroupBody(group, key, color, stageId) {
+  if (!group.subgroups) return `<div class="job-group-list">${group.candidates.map((candidate) => renderCandidateCard(candidate, color, stageId)).join("")}</div>`;
+  return `
+    <div class="job-group-list">
+      ${group.subgroups.map((subgroup) => renderCandidateSubgroup(subgroup, `${key}:${subgroup.id}`, color, stageId)).join("")}
+    </div>
+  `;
+}
+
+function renderCandidateSubgroup(group, key, color, stageId) {
+  const collapsed = !!state.collapsedCandidateGroups[key];
+  return `
+    <div class="candidate-subgroup">
+      <button class="candidate-subgroup-head" data-toggle-candidate-group="${escapeAttr(key)}">
+        <span class="chevron">${collapsed ? "›" : "⌄"}</span>
+        <span class="eu-sticker ${group.eu ? "eu" : "non-eu"}">${group.label}</span>
+        <em>${group.candidates.length}</em>
+      </button>
+      ${collapsed ? "" : `<div class="job-group-list">${group.candidates.map((candidate) => renderCandidateCard(candidate, color, stageId)).join("")}</div>`}
+    </div>
+  `;
+}
+
 function jobCandidateGroups(candidates) {
-  const groups = state.jobs.flatMap((job) => [
-    { id: `${job.id}:eu`, name: job.name, eu: true, euLabel: "EU", candidates: candidates.filter((candidate) => candidate.jobId === job.id && candidate.eu) },
-    { id: `${job.id}:non-eu`, name: job.name, eu: false, euLabel: "Non-EU", candidates: candidates.filter((candidate) => candidate.jobId === job.id && !candidate.eu) }
-  ]).filter((group) => group.candidates.length);
+  const groups = state.jobs
+    .map((job) => jobCandidateGroup(job.id, job.name, candidates.filter((candidate) => candidate.jobId === job.id)))
+    .filter((group) => group.candidates.length);
   const unassigned = candidates.filter((candidate) => !state.jobs.some((job) => job.id === candidate.jobId));
-  const unassignedEu = unassigned.filter((candidate) => candidate.eu);
-  const unassignedNonEu = unassigned.filter((candidate) => !candidate.eu);
-  if (unassignedEu.length) groups.push({ id: "unassigned:eu", name: "No job", eu: true, euLabel: "EU", candidates: unassignedEu });
-  if (unassignedNonEu.length) groups.push({ id: "unassigned:non-eu", name: "No job", eu: false, euLabel: "Non-EU", candidates: unassignedNonEu });
+  if (unassigned.length) groups.push(jobCandidateGroup("unassigned", "No job", unassigned));
   return groups;
+}
+
+function jobCandidateGroup(id, name, candidates) {
+  const euCandidates = candidates.filter((candidate) => candidate.eu);
+  const nonEuCandidates = candidates.filter((candidate) => !candidate.eu);
+  return {
+    id,
+    name,
+    candidates,
+    subgroups: [
+      { id: "eu", label: "EU", eu: true, candidates: euCandidates },
+      { id: "non-eu", label: "non-EU", eu: false, candidates: nonEuCandidates }
+    ].filter((group) => group.candidates.length)
+  };
 }
 
 function placementCandidateGroups(candidates) {

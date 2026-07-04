@@ -6,7 +6,7 @@ export function jobName(id) {
 }
 
 export function candidateJobName(candidate) {
-  return `${jobName(candidate.jobId)} ${candidate.eu ? "EU" : "Non-EU"}`;
+  return `${jobName(candidate.jobId)} ${candidate.eu ? "EU" : "non-EU"}`;
 }
 
 export function positionName(id) {
