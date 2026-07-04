@@ -63,6 +63,8 @@ def _validate_candidates(candidates):
         if candidate_id in seen:
             raise StateValidationError(f"duplicate candidate id: {candidate_id}")
         seen.add(candidate_id)
+        if "eu" in candidate and not isinstance(candidate["eu"], bool):
+            raise StateValidationError("candidate eu must be boolean")
         tasks = candidate.get("tasks", [])
         if not isinstance(tasks, list):
             raise StateValidationError("candidate tasks must be a list")

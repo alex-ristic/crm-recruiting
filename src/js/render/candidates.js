@@ -52,6 +52,10 @@ export function renderCandidateModal(candidate) {
             ${candidateField(candidate, "experience", "Experience", "briefcase")}
             ${candidateField(candidate, "whenStart", "When start", "calendar")}
             <div class="field-row">
+              <span>${icon("check")}</span><label>EU papers</label>
+              <input class="field-checkbox" data-candidate-field="${candidate.id}:eu" type="checkbox" ${candidate.eu ? "checked" : ""} />
+            </div>
+            <div class="field-row">
               <span>${icon("tag")}</span><label>Job</label>
               <select data-candidate-field="${candidate.id}:jobId">
                 ${state.jobs.map((job) => `<option value="${job.id}" ${candidate.jobId === job.id ? "selected" : ""}>${job.name}</option>`).join("")}
@@ -117,6 +121,7 @@ function renderCandidateGroups(stageId, candidates, color) {
         <button class="job-group-head" data-toggle-candidate-group="${escapeAttr(key)}">
           <span class="chevron">${collapsed ? "›" : "⌄"}</span>
           <strong>${escapeHtml(group.name)}</strong>
+          ${group.euLabel ? `<span class="eu-sticker ${group.eu ? "eu" : "non-eu"}">${group.euLabel}</span>` : ""}
           <em>${group.candidates.length}</em>
         </button>
         ${collapsed ? "" : `<div class="job-group-list">${group.candidates.map((candidate) => renderCandidateCard(candidate, color, stageId)).join("")}</div>`}
@@ -126,11 +131,15 @@ function renderCandidateGroups(stageId, candidates, color) {
 }
 
 function jobCandidateGroups(candidates) {
-  const groups = state.jobs
-    .map((job) => ({ id: job.id, name: job.name, candidates: candidates.filter((candidate) => candidate.jobId === job.id) }))
-    .filter((group) => group.candidates.length);
+  const groups = state.jobs.flatMap((job) => [
+    { id: `${job.id}:eu`, name: job.name, eu: true, euLabel: "EU", candidates: candidates.filter((candidate) => candidate.jobId === job.id && candidate.eu) },
+    { id: `${job.id}:non-eu`, name: job.name, eu: false, euLabel: "Non-EU", candidates: candidates.filter((candidate) => candidate.jobId === job.id && !candidate.eu) }
+  ]).filter((group) => group.candidates.length);
   const unassigned = candidates.filter((candidate) => !state.jobs.some((job) => job.id === candidate.jobId));
-  if (unassigned.length) groups.push({ id: "unassigned", name: "No job", candidates: unassigned });
+  const unassignedEu = unassigned.filter((candidate) => candidate.eu);
+  const unassignedNonEu = unassigned.filter((candidate) => !candidate.eu);
+  if (unassignedEu.length) groups.push({ id: "unassigned:eu", name: "No job", eu: true, euLabel: "EU", candidates: unassignedEu });
+  if (unassignedNonEu.length) groups.push({ id: "unassigned:non-eu", name: "No job", eu: false, euLabel: "Non-EU", candidates: unassignedNonEu });
   return groups;
 }
 

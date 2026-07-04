@@ -59,6 +59,7 @@ def strip_removed_fields(payload):
         return
     allowed_candidate_fields = {
         "added",
+        "eu",
         "experience",
         "id",
         "jobId",

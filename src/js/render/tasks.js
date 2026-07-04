@@ -1,5 +1,5 @@
 import { state } from "../state.js";
-import { jobName, positionName } from "../selectors.js";
+import { candidateJobName, positionName } from "../selectors.js";
 import { compactDateLabel, isFutureDate, taskDateGroup } from "../utils/dates.js";
 import { escapeAttr, escapeHtml, formatCompletedAt, icon } from "../utils/formatting.js";
 
@@ -41,7 +41,7 @@ function candidateTasks() {
       if (task.done) return false;
       if (!state.taskView.includeUpcoming && isFutureDate(task.due)) return false;
       if (!q) return true;
-      return [task.title, task.note, task.due, task.time, candidate.name, candidate.phone, candidate.experience, candidate.whenStart, candidate.startDate, jobName(candidate.jobId), positionName(candidate.positionId)]
+      return [task.title, task.note, task.due, task.time, candidate.name, candidate.phone, candidate.experience, candidate.whenStart, candidate.startDate, candidateJobName(candidate), positionName(candidate.positionId)]
         .join(" ")
         .toLowerCase()
         .includes(q);
@@ -53,7 +53,7 @@ function taskSorter(sortBy) {
   return (a, b) => {
     if (sortBy === "urgency") return Number(a.task.urgency || 4) - Number(b.task.urgency || 4) || dueKey(a).localeCompare(dueKey(b));
     if (sortBy === "person") return a.candidate.name.localeCompare(b.candidate.name) || dueKey(a).localeCompare(dueKey(b));
-    if (sortBy === "job") return jobName(a.candidate.jobId).localeCompare(jobName(b.candidate.jobId)) || dueKey(a).localeCompare(dueKey(b));
+    if (sortBy === "job") return candidateJobName(a.candidate).localeCompare(candidateJobName(b.candidate)) || dueKey(a).localeCompare(dueKey(b));
     if (sortBy === "position") return positionName(a.candidate.positionId).localeCompare(positionName(b.candidate.positionId)) || dueKey(a).localeCompare(dueKey(b));
     return dueKey(a).localeCompare(dueKey(b)) || Number(a.task.urgency || 4) - Number(b.task.urgency || 4);
   };
@@ -80,7 +80,7 @@ function groupedTasks(tasks) {
 function groupMeta({ candidate, task }, groupBy) {
   if (groupBy === "urgency") return { label: `Urgency ${task.urgency || 4}`, order: Number(task.urgency || 4) };
   if (groupBy === "person") return { label: candidate.name || "No person", order: 0 };
-  if (groupBy === "job") return { label: jobName(candidate.jobId), order: 0 };
+  if (groupBy === "job") return { label: candidateJobName(candidate), order: 0 };
   if (groupBy === "position") return { label: positionName(candidate.positionId), order: 0 };
   return taskDateGroup(task.due);
 }
@@ -103,8 +103,7 @@ function renderTaskGroup(group) {
 }
 
 function renderTaskRow(candidate, task) {
-  const placement = positionName(candidate.positionId);
-  const assignment = candidate.positionId ? placement : jobName(candidate.jobId);
+  const assignment = candidateJobName(candidate);
   return `
     <button class="task-tab-card u${task.urgency || 4}" data-open-candidate-from-task="${candidate.id}">
       <span class="task-tab-title">${escapeHtml(task.title)}</span>
@@ -150,6 +149,7 @@ export function renderTaskComposer(candidate) {
 }
 
 export function renderTask(candidate, task) {
+  if (task.type === "stage-move") return renderStageMoveTask(task);
   return `
     <article class="task-card ${task.done ? "done" : ""}">
       <button class="complete-toggle" data-toggle-task="${candidate.id}:${task.id}" title="Complete task">${task.done ? icon("check") : ""}</button>
@@ -182,6 +182,20 @@ export function renderTask(candidate, task) {
       </div>
     </article>
   `.replaceAll('data-action="', `data-action="${candidate.id}:${task.id}:`);
+}
+
+function renderStageMoveTask(task) {
+  return `
+    <article class="task-card stage-move-task done">
+      <span class="complete-toggle square-toggle">${icon("check")}</span>
+      <div class="task-main">
+        <div class="task-title-row">
+          <span class="stage-move-title">${escapeHtml(task.title)}</span>
+          <span class="completed-at">${formatCompletedAt(task.completedAt)}</span>
+        </div>
+      </div>
+    </article>
+  `;
 }
 
 function quickButton(action, label) {

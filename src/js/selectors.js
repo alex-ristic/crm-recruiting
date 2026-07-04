@@ -5,6 +5,10 @@ export function jobName(id) {
   return state.jobs.find((job) => job.id === id)?.name || "No job";
 }
 
+export function candidateJobName(candidate) {
+  return `${jobName(candidate.jobId)} ${candidate.eu ? "EU" : "Non-EU"}`;
+}
+
 export function positionName(id) {
   const position = state.positions.find((item) => item.id === id);
   return position ? positionCardTitle(position) : "No position";
@@ -19,7 +23,7 @@ export function visibleCandidates() {
   const q = state.search.trim().toLowerCase();
   if (!q || state.activeTab !== "candidates") return state.candidates;
   return state.candidates.filter((candidate) =>
-    [candidate.name, candidate.phone, candidate.source, candidate.experience, candidate.whenStart, candidate.startDate, jobName(candidate.jobId), positionName(candidate.positionId)]
+    [candidate.name, candidate.phone, candidate.source, candidate.experience, candidate.whenStart, candidate.startDate, candidateJobName(candidate), positionName(candidate.positionId)]
       .join(" ")
       .toLowerCase()
       .includes(q)

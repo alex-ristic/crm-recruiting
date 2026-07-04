@@ -1,5 +1,5 @@
 import { freshTaskDraft, state, setState, setStateQuiet } from "../state.js";
-import { syncLinkedPosition } from "./candidates.js";
+import { syncLinkedPosition, withStageMoveTask } from "./candidates.js";
 import { actionLabel } from "../utils/formatting.js";
 import { addDays, completionTimestamp, today } from "../utils/dates.js";
 import { candidateStages } from "../constants.js";
@@ -134,7 +134,7 @@ export function quickAction(event) {
       if (stageByAction[action]) stage = stageByAction[action];
     }
     const tasks = candidate.tasks.map((task) => task.id === taskId ? { ...task, done: true, completedAt: task.completedAt || completionTimestamp(), note: [task.note, actionLabel(action)].filter(Boolean).join("\n") } : task);
-    return { ...candidate, stage, lastActivityAt: today(), tasks };
+    return withStageMoveTask({ ...candidate, tasks }, stage);
   });
   const changed = nextCandidates.find((candidate) => candidate.id === candidateId);
   setState(syncLinkedPosition({ candidates: nextCandidates }, candidateId, changed.stage));
