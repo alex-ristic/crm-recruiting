@@ -91,9 +91,46 @@ export function renderCandidateModal(candidate) {
           <div class="tasks">
             ${sortedTasks.map((task) => renderTask(candidate, task)).join("") || `<div class="empty-tasks">No tasks yet.</div>`}
           </div>
+          ${renderCandidateOpenPositions(candidate)}
         </div>
       </article>
     </div>
+  `;
+}
+
+function renderCandidateOpenPositions(candidate) {
+  const positions = openPositionsForCandidate(candidate);
+  return `
+    <div class="candidate-open-positions">
+      <div class="task-heading">
+        <h2>Open positions</h2><span>${positions.length} active for ${escapeHtml(jobName(candidate.jobId))}</span>
+      </div>
+      <div class="candidate-position-list">
+        ${positions.map((position) => renderCandidatePositionSummary(position)).join("") || `<div class="empty-tasks">No active open positions for this job.</div>`}
+      </div>
+    </div>
+  `;
+}
+
+function renderCandidatePositionSummary(position) {
+  return `
+    <article class="candidate-position-summary">
+      <div class="candidate-position-summary-head">
+        <strong>${escapeHtml(positionCardTitle(position))}</strong>
+        <span>${escapeHtml(position.openGroup ? position.openGroup.toUpperCase() : "OPEN")}</span>
+      </div>
+      <div class="candidate-position-facts">
+        <span>${icon("link")} ${escapeHtml(position.city || "No city")}</span>
+        <span>${icon("users")} ${escapeHtml(position.client || "No client")}</span>
+        <span>${icon("flag")} ${escapeHtml(position.salary || "No salary")}</span>
+      </div>
+      <div class="candidate-position-tags">
+        <span>${position.eu ? "EU" : "No EU"}</span>
+        <span>${position.accommodation ? "Accommodation" : "No accommodation"}</span>
+        <span>${position.food ? "Food" : "No food"}</span>
+      </div>
+      ${position.note ? `<p>${escapeHtml(position.note)}</p>` : ""}
+    </article>
   `;
 }
 
@@ -286,6 +323,12 @@ function assignablePositions(candidate) {
   const linkedPosition = state.positions.find((position) => position.id === candidate.positionId);
   if (linkedPosition && !positions.some((position) => position.id === linkedPosition.id)) return [linkedPosition, ...positions];
   return positions;
+}
+
+function openPositionsForCandidate(candidate) {
+  return state.positions
+    .filter((position) => position.stage === "open" && position.jobId === candidate.jobId)
+    .sort((a, b) => (a.city || "").localeCompare(b.city || "") || (a.client || "").localeCompare(b.client || ""));
 }
 
 function renderCandidateCard(candidate, color, stageId) {

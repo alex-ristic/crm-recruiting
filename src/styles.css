@@ -251,6 +251,16 @@ textarea { resize: vertical; }
 .linked-row strong { font-size: 13px; font-weight: 600; }
 .linked-row em { margin-left: auto; color: #64748b; font-style: normal; font-size: 12px; }
 .linked-row-static { cursor: default; }
+.candidate-open-positions { margin-top: 18px; }
+.candidate-position-list { display: flex; flex-direction: column; gap: 8px; }
+.candidate-position-summary { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+.candidate-position-summary-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.candidate-position-summary-head strong { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #0f172a; font-size: 13px; font-weight: 800; }
+.candidate-position-summary-head span { height: 22px; display: inline-flex; align-items: center; padding: 0 7px; border-radius: 999px; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; font-size: 10px; font-weight: 800; }
+.candidate-position-facts, .candidate-position-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.candidate-position-facts span, .candidate-position-tags span { min-height: 24px; display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border-radius: 6px; background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; font-size: 11px; font-weight: 700; }
+.candidate-position-facts svg { width: 11px; height: 11px; flex: 0 0 11px; color: #94a3b8; }
+.candidate-position-summary p { margin: 0; color: #64748b; font-size: 12px; line-height: 1.45; }
 .decision-modal { width: min(640px, calc(100vw - 32px)); max-height: min(760px, calc(100vh - 32px)); display: flex; flex-direction: column; overflow: hidden; background: #fff; border-radius: 16px; box-shadow: 0 24px 60px rgba(15,23,42,.28); }
 .decision-copy { margin-bottom: 16px; }
 .decision-copy h2 { margin: 0 0 4px; font-size: 18px; font-weight: 700; letter-spacing: 0; }
