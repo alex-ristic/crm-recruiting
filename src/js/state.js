@@ -17,9 +17,13 @@ export const defaultState = {
   openPositionFilter: null,
   positionFilterSearch: { jobIds: "", clients: "", cities: "" },
   showOpenPositionGroups: false,
+  showClosedWonPositionGroups: false,
+  showClosedWonCandidateGroups: false,
+  showPotentialCandidates: false,
+  pendingClosedLostDecision: null,
   collapsedCandidateGroups: {},
   collapsedTaskGroups: {},
-  taskView: { groupBy: "due", sortBy: "due", includeUpcoming: true },
+  taskView: { groupBy: "due", sortBy: "urgency", includeUpcoming: false },
   taskComposerCandidateId: null,
   showJobComposer: false,
   showPositionComposer: false,
@@ -75,6 +79,10 @@ export function hydrateState(parsed) {
     openPositionFilter: null,
     positionFilterSearch: { jobIds: "", clients: "", cities: "" },
     showOpenPositionGroups: !!parsed.showOpenPositionGroups,
+    showClosedWonPositionGroups: !!parsed.showClosedWonPositionGroups,
+    showClosedWonCandidateGroups: !!parsed.showClosedWonCandidateGroups,
+    showPotentialCandidates: !!parsed.showPotentialCandidates,
+    pendingClosedLostDecision: null,
     collapsedCandidateGroups: parsed.collapsedCandidateGroups || {},
     collapsedTaskGroups: parsed.collapsedTaskGroups || {},
     taskView: normalizeTaskView(parsed.taskView || {}),
@@ -94,7 +102,7 @@ function normalizeTaskView(view) {
   const sorts = new Set(["due", "urgency", "person", "job", "position"]);
   return {
     groupBy: groups.has(view.groupBy) ? view.groupBy : "due",
-    sortBy: sorts.has(view.sortBy) ? view.sortBy : "due",
+    sortBy: sorts.has(view.sortBy) ? view.sortBy : "urgency",
     includeUpcoming: view.includeUpcoming !== false
   };
 }
@@ -162,6 +170,7 @@ function normalizeCandidate(candidate) {
     jobId = "",
     positionId = "",
     stage = "new-lead",
+    closedWonGroup = "",
     lastActivityAt = today(),
     added = "",
     note = "",
@@ -179,6 +188,7 @@ function normalizeCandidate(candidate) {
     jobId,
     positionId,
     stage: normalizeCandidateStage(stage),
+    closedWonGroup: normalizeCandidateStage(stage) === "closed-won" ? closedWonGroup || "" : "",
     lastActivityAt,
     added,
     note,
@@ -210,12 +220,14 @@ function normalizePosition(position) {
     note: "",
     openings: 1,
     openGroup: "",
+    closedWonGroup: "",
     headlineOverrides: { city: null, client: null, job: null },
     ...position
   };
   return {
     ...normalized,
     openGroup: normalized.stage === "open" ? normalized.openGroup || "" : "",
+    closedWonGroup: normalized.stage === "closed-won" ? normalized.closedWonGroup || "" : "",
     headlineOverrides: { city: null, client: null, job: null, ...(position.headlineOverrides || {}) }
   };
 }

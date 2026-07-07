@@ -1,6 +1,6 @@
 import { app } from "./dom.js";
 import { state, setState } from "./state.js";
-import { addCandidate, deleteCandidate, moveCandidateToNextStage, moveCandidateToStage, toggleCandidateGroup, updateCandidate } from "./actions/candidates.js";
+import { addCandidate, applyClosedLostDecision, cancelClosedLostDecision, deleteCandidate, moveCandidateToNextStage, moveCandidateToStage, toggleCandidateGroup, updateCandidate } from "./actions/candidates.js";
 import {
   clearPositionFilters,
   createJob,
@@ -9,6 +9,7 @@ import {
   deletePosition,
   movePositionToStage,
   toggleHeadlinePart,
+  toggleClosedWonPositionGroups,
   toggleOpenPositionGroups,
   togglePositionFilter,
   updateHeadlinePart,
@@ -37,7 +38,7 @@ import {
   updateNewTaskUrgency,
   updateTask
 } from "./actions/tasks.js";
-import { closeModals, logoutCurrentUser, switchTab, toggleJobComposer, togglePositionComposer, updateSearch, updateTaskView } from "./actions/ui.js";
+import { applyTaskPreset, closeModals, logoutCurrentUser, switchTab, toggleClosedWonCandidateGroups, toggleJobComposer, togglePositionComposer, togglePotentialCandidates, updateSearch, updateTaskView } from "./actions/ui.js";
 
 let pointerDrag = null;
 let suppressClick = null;
@@ -50,9 +51,17 @@ export function bindEvents() {
   app.querySelector("[data-close-position-modal]")?.addEventListener("click", () => setState({ selectedPositionId: null }));
   app.querySelectorAll("[data-modal-overlay]").forEach((overlay) => overlay.addEventListener("click", (event) => {
     if (event.target !== overlay) return;
+    if (overlay.dataset.modalOverlay === "closed-lost") {
+      cancelClosedLostDecision();
+      return;
+    }
     closeModals();
   }));
   document.onkeydown = (event) => {
+    if (event.key === "Escape" && state.pendingClosedLostDecision) {
+      cancelClosedLostDecision();
+      return;
+    }
     if (event.key === "Escape" && (state.selectedId || state.selectedPositionId)) closeModals();
   };
   app.querySelectorAll("[data-open-candidate]").forEach((card) => card.addEventListener("click", () => {
@@ -73,8 +82,11 @@ export function bindEvents() {
   app.querySelectorAll("[data-open-candidate-from-position]").forEach((button) => button.addEventListener("click", () => setState({ selectedId: button.dataset.openCandidateFromPosition, selectedPositionId: null, activeTab: "candidates" })));
   app.querySelectorAll("[data-open-candidate-from-task]").forEach((button) => button.addEventListener("click", () => setState({ selectedId: button.dataset.openCandidateFromTask, selectedPositionId: null })));
   app.querySelectorAll("[data-task-view]").forEach((input) => input.addEventListener("change", updateTaskView));
+  app.querySelectorAll("[data-task-preset]").forEach((button) => button.addEventListener("click", () => applyTaskPreset(button.dataset.taskPreset)));
   app.querySelectorAll("[data-toggle-task-group]").forEach((button) => button.addEventListener("click", () => toggleTaskGroup(button.dataset.toggleTaskGroup)));
   app.querySelector("[data-add='candidate']")?.addEventListener("click", addCandidate);
+  app.querySelector("[data-toggle-potential-candidates]")?.addEventListener("click", togglePotentialCandidates);
+  app.querySelector("[data-toggle-closed-won-candidate-groups]")?.addEventListener("click", toggleClosedWonCandidateGroups);
   app.querySelectorAll("[data-toggle-candidate-group]").forEach((button) => button.addEventListener("click", () => toggleCandidateGroup(button.dataset.toggleCandidateGroup)));
   app.querySelectorAll("[data-next-candidate-stage]").forEach((button) => button.addEventListener("click", () => moveCandidateToNextStage(button.dataset.nextCandidateStage)));
   app.querySelector("[data-add='job']")?.addEventListener("click", toggleJobComposer);
@@ -82,6 +94,7 @@ export function bindEvents() {
   app.querySelector("[data-create-position]")?.addEventListener("click", createPosition);
   app.querySelector("[data-create-job]")?.addEventListener("click", createJob);
   app.querySelector("[data-toggle-open-position-groups]")?.addEventListener("click", toggleOpenPositionGroups);
+  app.querySelector("[data-toggle-closed-won-position-groups]")?.addEventListener("click", toggleClosedWonPositionGroups);
   app.querySelectorAll("[data-position-filter]").forEach((input) => input.addEventListener("change", updatePositionFilter));
   app.querySelectorAll("[data-toggle-position-filter]").forEach((button) => button.addEventListener("click", () => togglePositionFilter(button.dataset.togglePositionFilter)));
   app.querySelectorAll("[data-position-filter-search]").forEach((input) => input.addEventListener("input", updatePositionFilterSearch));
@@ -99,6 +112,8 @@ export function bindEvents() {
     event.stopPropagation();
     deleteCandidate(button.dataset.deleteCandidate);
   }));
+  app.querySelector("[data-apply-closed-lost-decision]")?.addEventListener("click", applyClosedLostDecision);
+  app.querySelectorAll("[data-cancel-closed-lost-decision]").forEach((button) => button.addEventListener("click", cancelClosedLostDecision));
   app.querySelectorAll("[draggable='true'][data-drag-type]").forEach((item) => {
     item.addEventListener("dragstart", handleDragStart);
     item.addEventListener("dragend", handleDragEnd);
@@ -198,7 +213,7 @@ function handlePointerDragEnd(event) {
   suppressClick = { type: drag.type, id: drag.id };
   const zone = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-drop-type][data-drop-stage]");
   if (!zone || zone.dataset.dropType !== drag.type) return;
-  if (drag.type === "candidate") moveCandidateToStage(drag.id, zone.dataset.dropStage);
+  if (drag.type === "candidate") moveCandidateToStage(drag.id, zone.dataset.dropStage, zone.dataset.dropOpenGroup);
   if (drag.type === "position") movePositionToStage(drag.id, zone.dataset.dropStage, positionDropBeforeId(zone, event.clientX, event.clientY, drag.id), zone.dataset.dropOpenGroup);
 }
 
@@ -227,7 +242,7 @@ function handleDrop(event) {
   }
   const stage = event.currentTarget.dataset.dropStage;
   if (payload.type !== event.currentTarget.dataset.dropType) return;
-  if (payload.type === "candidate") moveCandidateToStage(payload.id, stage);
+  if (payload.type === "candidate") moveCandidateToStage(payload.id, stage, event.currentTarget.dataset.dropOpenGroup);
   if (payload.type === "position") movePositionToStage(payload.id, stage, positionDropBeforeId(event.currentTarget, event.clientX, event.clientY, payload.id), event.currentTarget.dataset.dropOpenGroup);
 }
 

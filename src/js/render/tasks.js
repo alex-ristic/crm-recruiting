@@ -9,6 +9,8 @@ export function renderTasksBoard() {
   return `
     <section class="tasks-page">
       <div class="task-view-bar">
+        <button class="task-preset ${isTaskPresetActive("today-urgency") ? "active" : ""}" data-task-preset="today-urgency">${icon("calendar")} Today by urgency</button>
+        <button class="task-preset ${isTaskPresetActive("first-call") ? "active" : ""}" data-task-preset="first-call">${icon("phone")} 1st call by job</button>
         <label>Group <select data-task-view="groupBy">
           ${taskViewOption("none", "None", state.taskView.groupBy)}
           ${taskViewOption("due", "Date", state.taskView.groupBy)}
@@ -47,6 +49,12 @@ function candidateTasks() {
         .includes(q);
     })
     .sort(taskSorter(state.taskView.sortBy));
+}
+
+function isTaskPresetActive(preset) {
+  if (preset === "today-urgency") return state.taskView.groupBy === "due" && state.taskView.sortBy === "urgency" && !state.taskView.includeUpcoming;
+  if (preset === "first-call") return state.taskView.groupBy === "job" && state.taskView.sortBy === "urgency" && state.taskView.includeUpcoming;
+  return false;
 }
 
 function taskSorter(sortBy) {

@@ -1,9 +1,9 @@
 export const candidateStages = [
+  ["potential", "Potential", "#0d9488"],
   ["new-lead", "New Lead", "#0052ff"],
   ["in-work", "No Answer", "#d97706"],
   ["negotiation-1", "In Work", "#7c3aed"],
   ["negotiation-2", "Negotiation", "#6d28d9"],
-  ["potential", "Potential", "#0d9488"],
   ["good-to-place", "Good to Place", "#0891b2"],
   ["sent", "Sent", "#2563eb"],
   ["trial-starting", "Trial Starting", "#ca8a04"],
@@ -28,6 +28,11 @@ export const openPositionGroups = [
   ["u2", "U2", "#b45309"],
   ["u3", "U3", "#7c3aed"],
   ["not-mine", "Not Mine", "#64748b"]
+];
+
+export const closedWonPositionGroups = [
+  ["not-paid", "Not Paid", "#b45309"],
+  ["paid", "Paid", "#16a34a"]
 ];
 
 export const linkedStageMap = {

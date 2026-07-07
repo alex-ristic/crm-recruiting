@@ -29,6 +29,11 @@ export function restoreScrollState(state) {
   pendingScrollSnapshot = null;
   if (!snapshot) return;
   if (snapshot.activeTab === state.activeTab) {
+    const tasksPage = app.querySelector(".tasks-page");
+    if (tasksPage) {
+      tasksPage.scrollTop = snapshot.tasksTop;
+      tasksPage.scrollLeft = snapshot.tasksLeft;
+    }
     const board = app.querySelector("[data-board]");
     if (board) {
       board.scrollLeft = snapshot.boardLeft;
@@ -54,6 +59,8 @@ function captureScrollState(state) {
     activeTab: state.activeTab,
     boardLeft: board?.scrollLeft || 0,
     boardTop: board?.scrollTop || 0,
+    tasksTop: app.querySelector(".tasks-page")?.scrollTop || 0,
+    tasksLeft: app.querySelector(".tasks-page")?.scrollLeft || 0,
     modalTop: app.querySelector(".modal-body")?.scrollTop || 0,
     stages: Array.from(app.querySelectorAll("[data-drop-type][data-drop-stage]")).map((stage) => ({
       type: stage.dataset.dropType,

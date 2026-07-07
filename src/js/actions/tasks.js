@@ -1,5 +1,5 @@
 import { freshTaskDraft, state, setState, setStateQuiet } from "../state.js";
-import { syncLinkedPosition, withStageMoveTask } from "./candidates.js";
+import { startClosedLostDecision, syncLinkedPosition, withStageMoveTask } from "./candidates.js";
 import { actionLabel } from "../utils/formatting.js";
 import { addDays, completionTimestamp, today } from "../utils/dates.js";
 import { candidateStages } from "../constants.js";
@@ -114,6 +114,7 @@ export function toggleTask(event) {
 
 export function quickAction(event) {
   const [candidateId, taskId, action] = event.currentTarget.dataset.action.split(":");
+  if (action === "not-interested" && startClosedLostDecision(candidateId, taskId, action)) return;
   let nextCandidates = state.candidates.map((candidate) => {
     if (candidate.id !== candidateId) return candidate;
     let stage = candidate.stage;
@@ -126,7 +127,7 @@ export function quickAction(event) {
       const stageByAction = {
         "no-answer": "in-work",
         busy: "negotiation-1",
-        interested: "negotiation-1",
+        interested: "negotiation-2",
         "not-interested": "closed-lost",
         disqualify: "disqualified",
         "no-call-dq": "disqualified"

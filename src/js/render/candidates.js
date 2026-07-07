@@ -1,4 +1,4 @@
-import { assignablePositionStages, candidateStages } from "../constants.js";
+import { assignablePositionStages, candidateStages, closedWonPositionGroups } from "../constants.js";
 import { state } from "../state.js";
 import { jobName, positionCardTitle, positionName, stageMeta, visibleCandidates } from "../selectors.js";
 import { compactDateLabel } from "../utils/dates.js";
@@ -7,10 +7,17 @@ import { renderTask, renderTaskComposer } from "./tasks.js";
 
 export function renderCandidatesBoard() {
   const candidates = visibleCandidates();
+  const stages = state.showPotentialCandidates ? candidateStages : candidateStages.filter(([id]) => id !== "potential");
+  const potentialCount = candidates.filter((candidate) => candidate.stage === "potential").length;
   return `
     <section class="board-wrap">
+      <div class="candidate-board-tools">
+        <button class="potential-toggle ${state.showPotentialCandidates ? "active" : ""}" data-toggle-potential-candidates>
+          ${icon(state.showPotentialCandidates ? "x" : "plus")} Potential <b>${potentialCount}</b>
+        </button>
+      </div>
       <div class="board" data-board>
-        ${candidateStages.map(([id, label, color]) => renderCandidateStage(id, label, color, candidates)).join("")}
+        ${stages.map(([id, label, color]) => renderCandidateStage(id, label, color, candidates)).join("")}
       </div>
     </section>
   `;
@@ -90,23 +97,99 @@ export function renderCandidateModal(candidate) {
   `;
 }
 
+export function renderClosedLostDecisionModal() {
+  const candidate = state.candidates.find((item) => item.id === state.pendingClosedLostDecision?.candidateId);
+  const position = state.positions.find((item) => item.id === candidate?.positionId);
+  if (!candidate || !position) return "";
+  const linkedCandidates = state.candidates.filter((item) => item.positionId === position.id);
+  return `
+    <div class="overlay" data-modal-overlay="closed-lost" data-closed-lost-modal>
+      <article class="decision-modal">
+        <div class="modal-bar">
+          ${icon("briefcase")} <span>Linked position</span><span class="crumb">›</span><strong>${escapeHtml(positionCardTitle(position))}</strong>
+          <button class="icon-button" data-cancel-closed-lost-decision>${icon("x")}</button>
+        </div>
+        <div class="modal-body">
+          <div class="decision-copy">
+            <h2>What happens with ${escapeHtml(positionCardTitle(position))}?</h2>
+            <p>Choose what happens with the linked position and whether this candidate stays linked.</p>
+          </div>
+          <div class="fields decision-fields">
+            <div class="field-row">
+              <span>${icon("briefcase")}</span><label>Position</label>
+              <select data-closed-lost-position-action>
+                <option value="closed-lost">Move to Closed Lost</option>
+                <option value="open">Move to Open</option>
+                <option value="none">Do nothing</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <span>${icon("link")}</span><label>Link</label>
+              <select data-closed-lost-link-action>
+                <option value="keep">Keep linked</option>
+                <option value="unlink">Unlink candidate</option>
+              </select>
+            </div>
+          </div>
+          <div class="task-heading">
+            <h2>All linked candidates</h2><span>${linkedCandidates.length} total</span>
+          </div>
+          <div class="linked-list">
+            ${linkedCandidates.map((item) => `<div class="linked-row linked-row-static"><span>${initials(item.name)}</span><strong>${escapeHtml(item.name)}</strong><em>${stageMeta(item.stage, candidateStages).name}</em></div>`).join("")}
+          </div>
+          <div class="decision-actions">
+            <button class="task-heading-action cancel" data-cancel-closed-lost-decision>Cancel</button>
+            <button class="primary-button compact" data-apply-closed-lost-decision>${icon("check")} Apply</button>
+          </div>
+        </div>
+      </article>
+    </div>
+  `;
+}
+
 export function isPlacementGroupedStage(stageId) {
   return ["sent", "trial-starting", "trial", "closed-won"].includes(stageId);
 }
 
 function renderCandidateStage(id, label, color, candidates) {
   const stageCandidates = candidates.filter((candidate) => candidate.stage === id);
+  const closedWonExpanded = id === "closed-won" && state.showClosedWonCandidateGroups;
   return `
-    <section class="stage-column">
+    <section class="stage-column candidate-stage candidate-stage-${id} ${closedWonExpanded ? "closed-won-groups-expanded" : ""}">
       <div class="stage-title">
         <span class="dot" style="background:${color}"></span>
         <span>${label}</span>
+        ${id === "closed-won" ? `<button class="open-group-toggle ${closedWonExpanded ? "active" : ""}" data-toggle-closed-won-candidate-groups title="${closedWonExpanded ? "Hide Closed Won groups" : "Show Closed Won groups"}">${icon("check")}</button>` : ""}
         <b>${stageCandidates.length}</b>
       </div>
-      <div class="stage-list" data-drop-type="candidate" data-drop-stage="${id}">
-        ${renderCandidateGroups(id, stageCandidates, color)}
-      </div>
+      ${closedWonExpanded ? renderClosedWonCandidateGroups(stageCandidates, color) : `
+        <div class="stage-list" data-drop-type="candidate" data-drop-stage="${id}">
+          ${renderCandidateGroups(id, stageCandidates, color)}
+        </div>
+      `}
     </section>
+  `;
+}
+
+function renderClosedWonCandidateGroups(candidates, color) {
+  return `
+    <div class="candidate-closed-won-groups">
+      ${closedWonPositionGroups.map(([id, label, groupColor]) => {
+        const groupCandidates = candidates.filter((candidate) => closedWonGroupForCandidate(candidate) === id);
+        return `
+          <section class="open-group">
+            <div class="open-group-title">
+              <span class="dot" style="background:${groupColor}"></span>
+              <span>${label}</span>
+              <b>${groupCandidates.length}</b>
+            </div>
+            <div class="stage-list open-group-list" data-drop-type="candidate" data-drop-stage="closed-won" data-drop-open-group="${id}">
+              ${renderCandidateGroups("closed-won", groupCandidates, color)}
+            </div>
+          </section>
+        `;
+      }).join("")}
+    </div>
   `;
 }
 
@@ -190,11 +273,19 @@ function placementCandidateGroups(candidates) {
   return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function closedWonGroupForCandidate(candidate) {
+  const position = state.positions.find((item) => item.id === candidate.positionId);
+  return candidate.closedWonGroup || position?.closedWonGroup || "not-paid";
+}
+
 function assignablePositions(candidate) {
-  return state.positions.filter((position) =>
+  const positions = state.positions.filter((position) =>
     position.jobId === candidate.jobId &&
-    assignablePositionStages.has(position.stage)
+    (assignablePositionStages.has(position.stage) || position.id === candidate.positionId)
   );
+  const linkedPosition = state.positions.find((position) => position.id === candidate.positionId);
+  if (linkedPosition && !positions.some((position) => position.id === linkedPosition.id)) return [linkedPosition, ...positions];
+  return positions;
 }
 
 function renderCandidateCard(candidate, color, stageId) {

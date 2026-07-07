@@ -58,6 +58,10 @@ export function toggleOpenPositionGroups() {
   setState({ showOpenPositionGroups: !state.showOpenPositionGroups });
 }
 
+export function toggleClosedWonPositionGroups() {
+  setState({ showClosedWonPositionGroups: !state.showClosedWonPositionGroups });
+}
+
 export function toggleHeadlinePart(event) {
   const [positionId, key] = event.currentTarget.dataset.toggleHeadlinePart.split(":");
   const position = state.positions.find((item) => item.id === positionId);
@@ -106,13 +110,18 @@ export function updatePosition(event) {
       if (position.id !== id) return position;
       const nextPosition = { ...position, [key]: value };
       if (key === "stage" && value !== "open") nextPosition.openGroup = "";
+      if (key === "stage" && value !== "closed-won") nextPosition.closedWonGroup = "";
       return nextPosition;
     })
   };
   if (key === "stage" && value !== "open" && oldPosition && oldPosition.stage !== "open") {
     patch = {
       ...patch,
-      candidates: state.candidates.map((candidate) => candidate.positionId === id && candidate.stage === oldPosition.stage ? { ...candidate, stage: value } : candidate)
+      candidates: state.candidates.map((candidate) => candidate.positionId === id && candidate.stage === oldPosition.stage ? {
+        ...candidate,
+        stage: value,
+        closedWonGroup: value === "closed-won" ? oldPosition.closedWonGroup || candidate.closedWonGroup || "not-paid" : ""
+      } : candidate)
     };
   }
   if (event.type === "input" && !["stage", "jobId", "eu", "accommodation", "food"].includes(key)) setStateQuiet(patch);
@@ -145,7 +154,8 @@ export function movePositionToStage(positionId, stage, beforePositionId = null, 
   const movedPosition = {
     ...oldPosition,
     stage,
-    openGroup: stage === "open" ? openGroup ?? oldPosition.openGroup ?? "" : ""
+    openGroup: stage === "open" ? openGroup ?? oldPosition.openGroup ?? "" : "",
+    closedWonGroup: stage === "closed-won" ? openGroup ?? oldPosition.closedWonGroup ?? "" : ""
   };
   const remainingPositions = state.positions.filter((position) => position.id !== positionId);
   const insertIndex = beforePositionId
@@ -157,7 +167,11 @@ export function movePositionToStage(positionId, stage, beforePositionId = null, 
   if (stage !== "open" && oldPosition && oldPosition.stage !== "open") {
     patch = {
       ...patch,
-      candidates: state.candidates.map((candidate) => candidate.positionId === positionId && candidate.stage === oldPosition.stage ? { ...candidate, stage } : candidate)
+      candidates: state.candidates.map((candidate) => candidate.positionId === positionId && candidate.stage === oldPosition.stage ? {
+        ...candidate,
+        stage,
+        closedWonGroup: stage === "closed-won" ? movedPosition.closedWonGroup || candidate.closedWonGroup || "not-paid" : ""
+      } : candidate)
     };
   }
   setState(patch);

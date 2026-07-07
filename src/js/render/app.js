@@ -1,7 +1,7 @@
 import { app, restorePendingFocus, restoreScrollState } from "../dom.js";
 import { state } from "../state.js";
 import { bindEvents } from "../events.js";
-import { renderCandidatesBoard, renderCandidateModal } from "./candidates.js";
+import { renderCandidatesBoard, renderCandidateModal, renderClosedLostDecisionModal } from "./candidates.js";
 import { renderJobs, renderPositionModal, renderPositionsBoard } from "./jobs.js";
 import { renderRail, renderTopbar } from "./common.js";
 import { renderTasksBoard } from "./tasks.js";
@@ -18,6 +18,7 @@ export function renderApp() {
       </main>
       ${selected && ["candidates", "tasks"].includes(state.activeTab) ? renderCandidateModal(selected) : ""}
       ${selectedPosition && state.activeTab === "positions" ? renderPositionModal(selectedPosition) : ""}
+      ${state.pendingClosedLostDecision ? renderClosedLostDecisionModal() : ""}
     </div>
   `;
   bindEvents();

@@ -13,6 +13,16 @@ export function updateTaskView(event) {
   setState({ taskView: { ...state.taskView, [key]: value } });
 }
 
+export function applyTaskPreset(preset) {
+  if (preset === "today-urgency") {
+    setState({ taskView: { ...state.taskView, groupBy: "due", sortBy: "urgency", includeUpcoming: false } });
+    return;
+  }
+  if (preset === "first-call") {
+    setState({ taskView: { ...state.taskView, groupBy: "job", sortBy: "urgency", includeUpcoming: true } });
+  }
+}
+
 export function switchTab(tab) {
   setState({ activeTab: tab, selectedId: null, selectedPositionId: null, taskComposerCandidateId: null });
 }
@@ -27,6 +37,14 @@ export function toggleJobComposer() {
 
 export function togglePositionComposer() {
   setState({ showPositionComposer: !state.showPositionComposer });
+}
+
+export function togglePotentialCandidates() {
+  setState({ showPotentialCandidates: !state.showPotentialCandidates });
+}
+
+export function toggleClosedWonCandidateGroups() {
+  setState({ showClosedWonCandidateGroups: !state.showClosedWonCandidateGroups });
 }
 
 export function logoutCurrentUser() {
