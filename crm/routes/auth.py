@@ -7,8 +7,10 @@ from crm.auth import (
     is_same_origin,
     parse_form_body,
     verify_password,
+    get_current_user,
 )
 from crm.routes.state import send_json
+from crm.users import effective_permissions, public_user
 
 
 def handle_login_page(handler, error=""):
@@ -36,12 +38,13 @@ def handle_login_post(handler):
     form = parse_form_body(handler)
     username = form.get("username", "")
     password = form.get("password", "")
-    if username != handler.settings.admin_username or not verify_password(password, handler.settings.admin_password_hash):
+    user = handler.user_storage.find_by_username(username)
+    if not user or not user.get("active", True) or not verify_password(password, user.get("passwordHash", "")):
         handle_login_page(handler, error="invalid")
         return
     handler.send_response(HTTPStatus.SEE_OTHER)
     handler.send_header("Location", "/")
-    handler.send_header("Set-Cookie", create_session_cookie(handler.settings, username))
+    handler.send_header("Set-Cookie", create_session_cookie(handler.settings, user))
     handler.send_header("Cache-Control", "no-store")
     handler.end_headers()
 
@@ -58,11 +61,19 @@ def handle_logout_post(handler):
 
 
 def handle_session(handler):
+    assignees = [
+        {"id": user["id"], "name": user.get("name") or user["username"], "active": user.get("active", True)}
+        for user in handler.user_storage.list_users()
+    ]
     if not handler.settings.auth_enabled:
-        send_json(handler, {"authenticated": True, "csrfToken": None, "authRequired": False})
+        user = get_current_user(handler)
+        if not any(item["id"] == user["id"] for item in assignees):
+            assignees.insert(0, {"id": user["id"], "name": user["name"], "active": True})
+        send_json(handler, {"authenticated": True, "csrfToken": None, "authRequired": False, "user": public_user(user), "permissions": effective_permissions(user), "assignees": assignees})
         return
     token = csrf_token(handler)
-    send_json(handler, {"authenticated": bool(token), "csrfToken": token, "authRequired": True})
+    user = get_current_user(handler)
+    send_json(handler, {"authenticated": bool(token), "csrfToken": token, "authRequired": True, "user": public_user(user) if user else None, "permissions": effective_permissions(user) if user else {}, "assignees": assignees})
 
 
 def _login_html(message):

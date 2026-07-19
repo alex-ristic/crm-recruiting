@@ -67,19 +67,29 @@ def _validate_candidates(candidates):
             raise StateValidationError("candidate eu must be boolean")
         if "groupOverride" in candidate and candidate["groupOverride"] is not None and not isinstance(candidate["groupOverride"], str):
             raise StateValidationError("candidate groupOverride must be a string or null")
+        if "assigneeId" in candidate and not isinstance(candidate["assigneeId"], str):
+            raise StateValidationError("candidate assigneeId must be a string")
         tasks = candidate.get("tasks", [])
         if not isinstance(tasks, list):
             raise StateValidationError("candidate tasks must be a list")
         if len(tasks) > MAX_TASKS_PER_CANDIDATE:
             raise StateValidationError("candidate has too many tasks")
+        task_ids = set()
         for task in tasks:
             _require_object(task, "task")
             _require_string(task, "id", "task")
             _require_string(task, "title", "task")
+            if task["id"] in task_ids:
+                raise StateValidationError(f"duplicate task id: {task['id']}")
+            task_ids.add(task["id"])
             if "done" in task and not isinstance(task["done"], bool):
                 raise StateValidationError("task done must be boolean")
             if "urgency" in task and not isinstance(task["urgency"], (int, float)):
                 raise StateValidationError("task urgency must be numeric")
+            if "assigneeId" in task and not isinstance(task["assigneeId"], str):
+                raise StateValidationError("task assigneeId must be a string")
+            if "assignmentMode" in task and task["assignmentMode"] not in {"inherited", "explicit"}:
+                raise StateValidationError("task assignmentMode is invalid")
 
 
 def _require_object(value, label):

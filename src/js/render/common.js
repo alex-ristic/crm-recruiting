@@ -1,8 +1,9 @@
 import { candidateStages, positionStages } from "../constants.js";
 import { state } from "../state.js";
 import { escapeAttr, icon } from "../utils/formatting.js";
+import { currentUser, permissions } from "../access.js";
 
-const tabs = [
+const baseTabs = [
   ["tasks", "listChecks"],
   ["candidates", "users"],
   ["positions", "briefcase"],
@@ -17,7 +18,8 @@ const tabCopy = {
   },
   candidates: () => ["Candidates", `${state.candidates.length} total - ${candidateStages.length} stages`, "Search candidates...", "candidate", false],
   positions: () => ["Positions", `${state.positions.length} concrete openings - ${positionStages.length} stages`, "Search positions...", "position", state.showPositionComposer],
-  jobs: () => ["Jobs", `${state.jobs.length} manually managed jobs`, "Search jobs...", "job", state.showJobComposer]
+  jobs: () => ["Jobs", `${state.jobs.length} manually managed jobs`, "Search jobs...", "job", state.showJobComposer],
+  users: () => ["Users", "Manage logins and access", "Search users...", null, false]
 };
 
 export function renderRail() {
@@ -26,7 +28,7 @@ export function renderRail() {
     <aside class="rail">
       <div class="logo">R</div>
       <div class="rail-stack">
-        ${tabs.map(([tab, iconName]) => item(tab, iconName)).join("")}
+        ${[...baseTabs, ...(permissions.manageUsers ? [["users", "lock"]] : [])].map(([tab, iconName]) => item(tab, iconName)).join("")}
       </div>
     </aside>
   `;
@@ -34,6 +36,7 @@ export function renderRail() {
 
 export function renderTopbar() {
   const copy = (tabCopy[state.activeTab] || tabCopy.tasks)();
+  const canAdd = copy[3] === "candidate" ? permissions.createCandidates : permissions.manageCatalog;
   return `
     <header class="topbar">
       <div class="title-group">
@@ -44,7 +47,8 @@ export function renderTopbar() {
         ${icon("search")}
         <input data-search value="${escapeAttr(state.search)}" placeholder="${copy[2]}" />
       </label>
-      ${copy[3] ? `<button class="primary-button" data-add="${copy[3]}">${copy[4] ? icon("x") : icon("plus")} ${copy[4] ? "Close" : `Add ${copy[3]}`}</button>` : ""}
+      ${copy[3] && canAdd ? `<button class="primary-button" data-add="${copy[3]}">${copy[4] ? icon("x") : icon("plus")} ${copy[4] ? "Close" : `Add ${copy[3]}`}</button>` : ""}
+      <span class="current-user"><strong>${currentUser?.name || "User"}</strong><em>${currentUser?.role || ""}</em></span>
       <button class="logout-button" data-logout>Logout</button>
     </header>
   `;

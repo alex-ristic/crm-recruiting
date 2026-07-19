@@ -27,7 +27,7 @@ The frontend pass split the old single `src/app.js` into focused browser modules
 
 The VPS prep pass added:
 
-- Single-user auth using `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, and `SESSION_SECRET`.
+- Multi-user auth with admin, viewer, and associate role defaults, plus per-user permission overrides. `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` bootstrap the first administrator.
 - Signed HttpOnly session cookies and CSRF-protected state writes.
 - Login, logout, and `/api/session`.
 - CRM state validation before save.

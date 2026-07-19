@@ -2,6 +2,7 @@ import { state } from "../state.js";
 import { candidateJobName, positionName } from "../selectors.js";
 import { compactDateLabel, isFutureDate, taskDateGroup } from "../utils/dates.js";
 import { escapeAttr, escapeHtml, formatCompletedAt, icon } from "../utils/formatting.js";
+import { activeUsers, canEditTask, permissions, userName } from "../access.js";
 
 export function renderTasksBoard() {
   const tasks = candidateTasks();
@@ -158,26 +159,28 @@ export function renderTaskComposer(candidate) {
 
 export function renderTask(candidate, task) {
   if (task.type === "stage-move") return renderStageMoveTask(candidate, task);
+  const editable = canEditTask(task);
   return `
     <article class="task-card ${task.done ? "done" : ""}">
-      <button class="complete-toggle" data-toggle-task="${candidate.id}:${task.id}" title="Complete task">${task.done ? icon("check") : ""}</button>
+      <button class="complete-toggle" data-toggle-task="${candidate.id}:${task.id}" title="Complete task" ${editable ? "" : "disabled"}>${task.done ? icon("check") : ""}</button>
       <div class="task-main">
         <div class="task-title-row">
-          <input class="task-title" data-task-field="${candidate.id}:${task.id}:title" value="${escapeAttr(task.title)}" />
+          <input class="task-title" data-task-field="${candidate.id}:${task.id}:title" value="${escapeAttr(task.title)}" ${editable ? "" : "disabled"} />
           ${task.done ? `<span class="completed-at">${formatCompletedAt(task.completedAt)}</span>` : ""}
-          <button class="tiny-danger" data-delete-task="${candidate.id}:${task.id}" title="Delete task">${icon("x")}</button>
+          ${editable ? `<button class="tiny-danger" data-delete-task="${candidate.id}:${task.id}" title="Delete task">${icon("x")}</button>` : ""}
         </div>
         <div class="task-meta-row">
-          <label class="task-chip urgency-chip u${task.urgency}">${icon("flag")} U<select data-task-field="${candidate.id}:${task.id}:urgency">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${task.urgency === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+          <label class="task-chip urgency-chip u${task.urgency}">${icon("flag")} U<select data-task-field="${candidate.id}:${task.id}:urgency" ${editable ? "" : "disabled"}>${[1, 2, 3, 4].map((n) => `<option value="${n}" ${task.urgency === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>
           <label class="task-chip task-date-display" data-task-date-display>
             ${icon("calendar")}
             <span>${escapeHtml(compactDateLabel(task.due))}</span>
-            <input type="date" data-task-field="${candidate.id}:${task.id}:due" value="${escapeAttr(task.due || "")}" aria-label="Task date" />
+            <input type="date" data-task-field="${candidate.id}:${task.id}:due" value="${escapeAttr(task.due || "")}" aria-label="Task date" ${editable ? "" : "disabled"} />
           </label>
-          <label class="task-chip">${icon("calendar")}<input type="time" data-task-field="${candidate.id}:${task.id}:time" value="${task.time || ""}" /></label>
+          <label class="task-chip">${icon("calendar")}<input type="time" data-task-field="${candidate.id}:${task.id}:time" value="${task.time || ""}" ${editable ? "" : "disabled"} /></label>
+          ${renderTaskAssignee(candidate, task)}
         </div>
-        <textarea class="task-note" data-task-field="${candidate.id}:${task.id}:note" placeholder="Task comment - click and type here...">${escapeHtml(task.note || "")}</textarea>
-        <div class="quick-actions">
+        <textarea class="task-note" data-task-field="${candidate.id}:${task.id}:note" placeholder="Task comment - click and type here..." ${editable ? "" : "disabled"}>${escapeHtml(task.note || "")}</textarea>
+        ${editable ? `<div class="quick-actions">
           ${quickButton("no-answer", "No answer")}
           ${quickButton("interested", "Interested")}
           ${quickButton("not-interested", "Not interested")}
@@ -187,7 +190,7 @@ export function renderTask(candidate, task) {
           <span class="quick-divider"></span>
           ${quickButton("second-no-answer", "2nd no answer")}
           ${quickButton("good-to-place", "Good to place")}
-        </div>
+        </div>` : ""}
       </div>
     </article>
   `.replaceAll('data-action="', `data-action="${candidate.id}:${task.id}:`);
@@ -201,11 +204,16 @@ function renderStageMoveTask(candidate, task) {
         <div class="task-title-row">
           <span class="stage-move-title">${escapeHtml(task.title)}</span>
           <span class="completed-at">${formatCompletedAt(task.completedAt)}</span>
-          <button class="tiny-danger" data-delete-task="${candidate.id}:${task.id}" title="Delete task">${icon("x")}</button>
+          ${canEditTask(task) ? `<button class="tiny-danger" data-delete-task="${candidate.id}:${task.id}" title="Delete task">${icon("x")}</button>` : ""}
         </div>
       </div>
     </article>
   `;
+}
+
+function renderTaskAssignee(candidate, task) {
+  if (!permissions.canAssign) return `<span class="task-chip owner-chip">${icon("users")}${escapeHtml(userName(task.assigneeId))}</span>`;
+  return `<label class="task-chip owner-chip">${icon("users")}<select data-task-field="${candidate.id}:${task.id}:assigneeId"><option value="__inherit__" ${task.assignmentMode !== "explicit" ? "selected" : ""}>Follow ${escapeHtml(userName(candidate.assigneeId))}</option>${activeUsers().map((user) => `<option value="${user.id}" ${task.assignmentMode === "explicit" && task.assigneeId === user.id ? "selected" : ""}>${escapeHtml(user.name)}</option>`).join("")}</select></label>`;
 }
 
 function quickButton(action, label) {

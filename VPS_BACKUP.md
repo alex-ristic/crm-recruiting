@@ -6,12 +6,14 @@ Live production data is stored at:
 
 ```text
 /var/lib/crm-recruiting/crm-state.json
+/var/lib/crm-recruiting/crm-users.json
 ```
 
-The app creates a local timestamped backup before every successful overwrite:
+The app creates local timestamped backups before successful record and user overwrites:
 
 ```text
 /var/lib/crm-recruiting/backups/crm-state-YYYYMMDD-HHMMSS-ffffff.json
+/var/lib/crm-recruiting/backups/crm-users-YYYYMMDD-HHMMSS-ffffff.json
 ```
 
 It keeps the latest 50 local backups by default.

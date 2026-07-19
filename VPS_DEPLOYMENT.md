@@ -39,6 +39,7 @@ CRM_HOST=127.0.0.1
 CRM_PORT=8000
 CRM_ENV=production
 CRM_STATE_FILE=/var/lib/crm-recruiting/crm-state.json
+CRM_USER_FILE=/var/lib/crm-recruiting/crm-users.json
 CRM_BACKUP_DIR=/var/lib/crm-recruiting/backups
 CRM_MAX_BACKUPS=50
 CRM_MAX_STATE_BYTES=5242880
@@ -48,6 +49,8 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD_HASH=REPLACE_WITH_HASH
 SESSION_SECRET=REPLACE_WITH_RANDOM_SECRET
 ```
+
+The initial administrator is created from `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` the first time the app starts. Additional users, roles, and permissions are managed from the Users screen.
 
 The app also accepts `HOST`, `PORT`, and `CRM_STATE_PATH` as aliases, but the `CRM_*` names above are preferred for clarity.
 
@@ -160,5 +163,6 @@ sudo certbot --nginx -d crm.example.com
 - Strong `ADMIN_PASSWORD_HASH`
 - Random `SESSION_SECRET`
 - Data in `/var/lib/crm-recruiting/`, not git
+- `crm-users.json` included in protected backups
 - Backups enabled and not web-served
 - Nginx HTTPS enabled

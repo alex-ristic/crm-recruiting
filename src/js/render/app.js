@@ -5,12 +5,14 @@ import { renderCandidatesBoard, renderCandidateModal, renderClosedLostDecisionMo
 import { renderJobs, renderPositionModal, renderPositionsBoard } from "./jobs.js";
 import { renderRail, renderTopbar } from "./common.js";
 import { renderTasksBoard } from "./tasks.js";
+import { renderUsers } from "./users.js";
+import { permissions } from "../access.js";
 
 export function renderApp() {
   const selected = state.candidates.find((candidate) => candidate.id === state.selectedId);
   const selectedPosition = state.positions.find((position) => position.id === state.selectedPositionId);
   app.innerHTML = `
-    <div class="crm-shell">
+    <div class="crm-shell ${permissions.manageCatalog ? "" : "catalog-readonly"}">
       ${renderRail()}
       <main class="workspace">
         ${renderTopbar()}
@@ -27,6 +29,7 @@ export function renderApp() {
 }
 
 function renderCurrentTab() {
+  if (state.activeTab === "users" && permissions.manageUsers) return renderUsers();
   if (state.activeTab === "tasks") return renderTasksBoard();
   if (state.activeTab === "positions") return renderPositionsBoard();
   if (state.activeTab === "jobs") return renderJobs();

@@ -2,6 +2,7 @@ import { assignablePositionStages, candidateStages, linkedStageMap } from "../co
 import { state, setState, setStateQuiet } from "../state.js";
 import { completionTimestamp, today } from "../utils/dates.js";
 import { actionLabel } from "../utils/formatting.js";
+import { currentUser, permissions } from "../access.js";
 
 export function toggleCandidateGroup(key) {
   setState({ collapsedCandidateGroups: { ...state.collapsedCandidateGroups, [key]: !state.collapsedCandidateGroups[key] } });
@@ -10,7 +11,8 @@ export function toggleCandidateGroup(key) {
 export function addCandidate() {
   const jobId = state.jobs[0]?.id || "";
   const id = `candidate-${Date.now()}`;
-  const candidate = { id, name: "New Candidate", phone: "", source: "Manual", experience: "", whenStart: "", startDate: "", eu: true, jobId, positionId: "", stage: "new-lead", closedWonGroup: "", groupOverride: null, lastActivityAt: today(), added: "Just added", note: "", tasks: [] };
+  if (!permissions.createCandidates) return;
+  const candidate = { id, name: "New Candidate", phone: "", source: "Manual", experience: "", whenStart: "", startDate: "", eu: true, jobId, positionId: "", stage: "new-lead", closedWonGroup: "", groupOverride: null, assigneeId: currentUser?.id || "", lastActivityAt: today(), added: "Just added", note: "", tasks: [] };
   setState({ candidates: [candidate, ...state.candidates], selectedId: id, activeTab: "candidates" });
 }
 
@@ -30,6 +32,14 @@ export function updateCandidate(event) {
       return candidate;
     }
     if (key === "stage") return withStageMoveTask(candidate, value, closedWonGroupForCandidate(candidate));
+    if (key === "assigneeId" && permissions.canAssign) {
+      return {
+        ...candidate,
+        assigneeId: value,
+        lastActivityAt: today(),
+        tasks: candidate.tasks.map((task) => !task.done && task.assignmentMode !== "explicit" ? { ...task, assigneeId: value, assignmentMode: "inherited" } : task)
+      };
+    }
     let nextCandidate = { ...candidate, [key]: value, lastActivityAt: today() };
     if (key === "jobId" && !positionAvailableForJob(nextCandidate.positionId, value)) nextCandidate.positionId = "";
     if (key === "positionId") nextCandidate = withPositionStage(nextCandidate, value);
@@ -118,11 +128,12 @@ export function withStageMoveTask(candidate, stage, closedWonGroup = null) {
   if (candidate.stage === stage) return nextCandidate;
   return {
     ...nextCandidate,
-    tasks: [...(candidate.tasks || []), stageMoveTask(stage, candidate.id)]
+    tasks: [...(candidate.tasks || []), stageMoveTask(stage, candidate)]
   };
 }
 
 export function syncLinkedPosition(patch, candidateId, candidateStage, closedWonGroup = null) {
+  if (!permissions.manageCatalog) return patch;
   const candidate = (patch.candidates || state.candidates).find((item) => item.id === candidateId);
   const positionStage = linkedStageMap[candidateStage];
   if (!candidate?.positionId || !positionStage) return patch;
@@ -138,7 +149,7 @@ export function syncLinkedPosition(patch, candidateId, candidateStage, closedWon
 }
 
 function shouldAskClosedLostDecision(candidate, stage) {
-  return stage === "closed-lost" && candidate?.positionId;
+  return stage === "closed-lost" && candidate?.positionId && permissions.manageCatalog;
 }
 
 function closedWonGroupForCandidate(candidate) {
@@ -176,9 +187,9 @@ function positionAvailableForJob(positionId, jobId) {
   );
 }
 
-function stageMoveTask(stage, candidateId) {
+function stageMoveTask(stage, candidate) {
   return {
-    id: `stage-move-${candidateId}-${stage}-${Date.now()}`,
+    id: `stage-move-${candidate.id}-${stage}-${Date.now()}`,
     title: `Moved to ${stageLabel(stage)}`,
     urgency: 4,
     due: today(),
@@ -186,7 +197,9 @@ function stageMoveTask(stage, candidateId) {
     done: true,
     completedAt: completionTimestamp(),
     note: "",
-    type: "stage-move"
+    type: "stage-move",
+    assigneeId: candidate.assigneeId || currentUser?.id || "",
+    assignmentMode: "inherited"
   };
 }
 

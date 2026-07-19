@@ -44,6 +44,7 @@ class Settings:
     port: int
     project_root: Path
     state_file: Path
+    user_file: Path
     backup_dir: Path
     max_backups: int
     max_state_bytes: int
@@ -74,12 +75,14 @@ def load_settings(load_dotenv_file=True):
     state_file = _env("CRM_STATE_FILE", "CRM_STATE_PATH")
     backup_dir = os.environ.get("CRM_BACKUP_DIR")
     resolved_state_file = Path(state_file).expanduser() if state_file else PROJECT_ROOT / "crm-state.json"
+    user_file = os.environ.get("CRM_USER_FILE")
     return Settings(
         environment=os.environ.get("CRM_ENV", "local"),
         host=_env("CRM_HOST", "HOST", default="127.0.0.1"),
         port=_int_env("CRM_PORT", "PORT", default=8000),
         project_root=PROJECT_ROOT,
         state_file=resolved_state_file,
+        user_file=Path(user_file).expanduser() if user_file else resolved_state_file.parent / "crm-users.json",
         backup_dir=Path(backup_dir).expanduser() if backup_dir else resolved_state_file.parent / "backups",
         max_backups=_int_env("CRM_MAX_BACKUPS", default=50),
         max_state_bytes=_int_env("CRM_MAX_STATE_BYTES", default=5 * 1024 * 1024),

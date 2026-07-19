@@ -12,12 +12,13 @@ import {
 } from "../selectors.js";
 import { candidateStages } from "../constants.js";
 import { escapeAttr, escapeHtml, icon, initials } from "../utils/formatting.js";
+import { permissions } from "../access.js";
 
 export function renderPositionsBoard() {
   return `
     <section class="board-wrap positions-wrap">
       ${renderPositionFilters()}
-      ${state.showPositionComposer ? renderPositionComposer() : ""}
+      ${state.showPositionComposer && permissions.manageCatalog ? renderPositionComposer() : ""}
       <div class="board ${state.showPositionComposer ? "positions-board with-composer" : "positions-board"}" data-board>
         ${positionStages.map(([id, label, color]) => renderPositionStage(id, label, color)).join("")}
       </div>
@@ -30,7 +31,7 @@ export function renderJobs() {
   const jobs = q ? state.jobs.filter((job) => [job.name, job.note].join(" ").toLowerCase().includes(q)) : state.jobs;
   return `
     <section class="positions-page">
-      ${state.showJobComposer ? `<div class="position-composer">
+      ${state.showJobComposer && permissions.manageCatalog ? `<div class="position-composer">
         <input data-new-job="name" value="${escapeAttr(state.newJob.name)}" placeholder="Job name, e.g. Konobar HR" />
         <input data-new-job="note" value="${escapeAttr(state.newJob.note)}" placeholder="Short note" />
         <button class="primary-button compact" data-create-job>${icon("plus")} Add</button>
@@ -41,10 +42,10 @@ export function renderJobs() {
             <div class="position-icon">${icon("tag")}</div>
             <div>
               <div class="position-card-head">
-                <input class="position-name" data-job-field="${job.id}:name" value="${escapeAttr(job.name)}" />
-                <button class="tiny-danger" data-delete-job="${job.id}" title="Delete job">${icon("x")}</button>
+                <input class="position-name" data-job-field="${job.id}:name" value="${escapeAttr(job.name)}" ${permissions.manageCatalog ? "" : "disabled"} />
+                ${permissions.manageCatalog ? `<button class="tiny-danger" data-delete-job="${job.id}" title="Delete job">${icon("x")}</button>` : ""}
               </div>
-              <input class="muted-inline-input" data-job-field="${job.id}:note" value="${escapeAttr(job.note || "")}" placeholder="No note" />
+              <input class="muted-inline-input" data-job-field="${job.id}:note" value="${escapeAttr(job.note || "")}" placeholder="No note" ${permissions.manageCatalog ? "" : "disabled"} />
               <span>${state.positions.filter((position) => position.jobId === job.id).length} positions - ${state.candidates.filter((candidate) => candidate.jobId === job.id).length} candidates</span>
             </div>
           </article>
@@ -63,10 +64,10 @@ export function renderPositionModal(position) {
       <article class="candidate-modal">
         <div class="modal-bar">
           ${icon("briefcase")} <span>Positions</span><span class="crumb">›</span><strong>${title}</strong>
-          <select class="stage-pill" data-position-field="${position.id}:stage" style="--stage:${meta.color}">
+          <select class="stage-pill" data-position-field="${position.id}:stage" style="--stage:${meta.color}" ${permissions.manageCatalog ? "" : "disabled"}>
             ${positionStages.map(([id, label]) => `<option value="${id}" ${position.stage === id ? "selected" : ""}>${label}</option>`).join("")}
           </select>
-          <button class="danger-button" data-delete-position="${position.id}">Delete</button>
+          ${permissions.manageCatalog ? `<button class="danger-button" data-delete-position="${position.id}">Delete</button>` : ""}
           <button class="icon-button" data-close-position-modal>${icon("x")}</button>
         </div>
         <div class="modal-body">
@@ -81,7 +82,7 @@ export function renderPositionModal(position) {
           <div class="fields">
             <div class="field-row">
               <span>${icon("tag")}</span><label>Job</label>
-              <select data-position-field="${position.id}:jobId">
+              <select data-position-field="${position.id}:jobId" ${permissions.manageCatalog ? "" : "disabled"}>
                 ${state.jobs.map((job) => `<option value="${job.id}" ${position.jobId === job.id ? "selected" : ""}>${job.name}</option>`).join("")}
               </select>
             </div>
@@ -91,20 +92,20 @@ export function renderPositionModal(position) {
             ${positionTextField(position, "url", "URL", "link")}
             <div class="field-row">
               <span>${icon("check")}</span><label>EU papers</label>
-              <input class="field-checkbox" data-position-field="${position.id}:eu" type="checkbox" ${position.eu ? "checked" : ""} />
+              <input class="field-checkbox" data-position-field="${position.id}:eu" type="checkbox" ${position.eu ? "checked" : ""} ${permissions.manageCatalog ? "" : "disabled"} />
             </div>
             <div class="field-row">
               <span>${icon("check")}</span><label>Accommodation</label>
-              <input class="field-checkbox" data-position-field="${position.id}:accommodation" type="checkbox" ${position.accommodation ? "checked" : ""} />
+              <input class="field-checkbox" data-position-field="${position.id}:accommodation" type="checkbox" ${position.accommodation ? "checked" : ""} ${permissions.manageCatalog ? "" : "disabled"} />
             </div>
             <div class="field-row">
               <span>${icon("check")}</span><label>Food</label>
-              <input class="field-checkbox" data-position-field="${position.id}:food" type="checkbox" ${position.food ? "checked" : ""} />
+              <input class="field-checkbox" data-position-field="${position.id}:food" type="checkbox" ${position.food ? "checked" : ""} ${permissions.manageCatalog ? "" : "disabled"} />
             </div>
           </div>
           <label class="candidate-note">
             <span>${icon("flag")} Position notes</span>
-            <textarea data-position-field="${position.id}:note" placeholder="Add position notes...">${escapeHtml(position.note || "")}</textarea>
+            <textarea data-position-field="${position.id}:note" placeholder="Add position notes..." ${permissions.manageCatalog ? "" : "disabled"}>${escapeHtml(position.note || "")}</textarea>
           </label>
           <div class="task-heading">
             <h2>Linked candidates</h2><span>${linkedCandidates.length} total</span>
@@ -260,7 +261,7 @@ function closedWonGroupForPosition(position) {
 function renderPositionCard(position, color) {
   const linkedCandidates = state.candidates.filter((candidate) => candidate.positionId === position.id);
   return `
-    <article class="candidate-card position-board-card" data-open-position="${position.id}" draggable="true" data-drag-type="position" data-drag-id="${position.id}">
+    <article class="candidate-card position-board-card" data-open-position="${position.id}" draggable="${permissions.manageCatalog ? "true" : "false"}" ${permissions.manageCatalog ? `data-drag-type="position" data-drag-id="${position.id}"` : ""}>
       <div class="card-row">
         <span class="avatar square-avatar" style="--accent:${color}">${icon("briefcase")}</span>
         <span class="card-name">${positionCardTitle(position)}</span>
@@ -288,9 +289,9 @@ function renderHeadlineControl(position, key, label) {
   const manual = position.headlineOverrides?.[key] !== null && position.headlineOverrides?.[key] !== undefined;
   return `
     <label class="headline-control ${manual ? "manual" : ""}">
-      <button type="button" class="headline-lock" data-toggle-headline-part="${position.id}:${key}" title="${manual ? "Use linked field" : "Unlock manual headline text"}">${icon(manual ? "unlock" : "lock")}</button>
+      <button type="button" class="headline-lock" data-toggle-headline-part="${position.id}:${key}" title="${manual ? "Use linked field" : "Unlock manual headline text"}" ${permissions.manageCatalog ? "" : "disabled"}>${icon(manual ? "unlock" : "lock")}</button>
       <span>${label}</span>
-      <input data-headline-part="${position.id}:${key}" value="${escapeAttr(headlineInputValue(position, key))}" ${manual ? "" : "disabled"} />
+      <input data-headline-part="${position.id}:${key}" value="${escapeAttr(headlineInputValue(position, key))}" ${manual && permissions.manageCatalog ? "" : "disabled"} />
     </label>
   `;
 }
@@ -299,7 +300,7 @@ function positionTextField(position, key, label, iconName) {
   return `
     <div class="field-row">
       <span>${icon(iconName)}</span><label>${label}</label>
-      <input data-position-field="${position.id}:${key}" value="${escapeAttr(position[key] || "")}" />
+      <input data-position-field="${position.id}:${key}" value="${escapeAttr(position[key] || "")}" ${permissions.manageCatalog ? "" : "disabled"} />
     </div>
   `;
 }

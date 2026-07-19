@@ -39,6 +39,7 @@ import {
   updateTask
 } from "./actions/tasks.js";
 import { applyTaskPreset, closeModals, logoutCurrentUser, switchTab, toggleClosedWonCandidateGroups, toggleJobComposer, togglePositionComposer, togglePotentialCandidates, updateSearch, updateTaskView } from "./actions/ui.js";
+import { applyRoleDefaults, createUser, updateUser } from "./actions/users.js";
 
 let pointerDrag = null;
 let suppressClick = null;
@@ -47,6 +48,9 @@ export function bindEvents() {
   app.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => switchTab(button.dataset.tab)));
   app.querySelector("[data-search]")?.addEventListener("input", updateSearch);
   app.querySelector("[data-logout]")?.addEventListener("click", logoutCurrentUser);
+  app.querySelector("[data-create-user]")?.addEventListener("click", createUser);
+  app.querySelectorAll("[data-update-user]").forEach((button) => button.addEventListener("click", () => updateUser(button.dataset.updateUser)));
+  app.querySelectorAll("[data-user-field='role']").forEach((select) => select.addEventListener("change", applyRoleDefaults));
   app.querySelector("[data-close-modal]")?.addEventListener("click", () => setState({ selectedId: null }));
   app.querySelector("[data-close-position-modal]")?.addEventListener("click", () => setState({ selectedPositionId: null }));
   app.querySelectorAll("[data-modal-overlay]").forEach((overlay) => overlay.addEventListener("click", (event) => {

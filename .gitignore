@@ -9,6 +9,8 @@ __pycache__/
 venv/
 crm-state.json
 crm-state.json.tmp
+crm-users.json
+crm-users.json.tmp
 *.backup
 *.bak
 backups/

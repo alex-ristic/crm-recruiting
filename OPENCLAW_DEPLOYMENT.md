@@ -2,7 +2,7 @@
 
 This guide is written for an AI deployment agent that receives only the GitHub repository link and must deploy the Recruiting CRM safely on a VPS.
 
-Do not commit or upload private `.env` files, `crm-state.json`, local backups, or credentials. Code lives in GitHub. CRM data lives on the VPS.
+Do not commit or upload private `.env` files, `crm-state.json`, `crm-users.json`, local backups, or credentials. Code lives in GitHub. CRM data and user accounts live on the VPS.
 
 ## Assumptions
 
@@ -19,6 +19,7 @@ Do not commit or upload private `.env` files, `crm-state.json`, local backups, o
 /opt/crm-recruiting/                         application code
 /opt/crm-recruiting/.venv/                   Python virtual environment
 /var/lib/crm-recruiting/crm-state.json       live CRM data
+/var/lib/crm-recruiting/crm-users.json       user accounts and password hashes
 /var/lib/crm-recruiting/backups/             local JSON backups
 /etc/crm-recruiting.env                      production environment file
 /etc/systemd/system/crm-recruiting.service   systemd service
@@ -83,6 +84,7 @@ Use these production values:
 CRM_HOST=127.0.0.1
 CRM_PORT=8000
 CRM_STATE_FILE=/var/lib/crm-recruiting/crm-state.json
+CRM_USER_FILE=/var/lib/crm-recruiting/crm-users.json
 CRM_BACKUP_DIR=/var/lib/crm-recruiting/backups
 CRM_MAX_BACKUPS=50
 CRM_MAX_STATE_BYTES=5242880
@@ -204,12 +206,12 @@ Manual browser verification:
 
 1. Open `https://crm.example.com`.
 2. Confirm the login page appears.
-3. Log in with `ADMIN_USERNAME` and the real password.
+3. Log in with `ADMIN_USERNAME` and the real password. This creates the initial administrator in `crm-users.json` on first startup.
 4. Confirm existing jobs, positions, candidates, and tasks appear.
 5. Add a temporary candidate and task.
 6. Refresh the page and confirm the temporary data persists.
 7. Delete the temporary candidate/task.
-8. Confirm `/crm-state.json` is not publicly available.
+8. Confirm `/crm-state.json` and `/crm-users.json` are not publicly available.
 9. Confirm browser console has no errors.
 
 ## Backups
@@ -291,5 +293,5 @@ journalctl -u crm-recruiting -n 200 --no-pager
 - `/var/lib/crm-recruiting/` is owned by `crm-recruiting`.
 - `/opt/crm-recruiting/` contains code only, not live CRM data.
 - Nginx config points to `127.0.0.1:8000`.
-- `/crm-state.json` is blocked publicly.
+- `/crm-state.json` and `/crm-users.json` are blocked publicly.
 - Offsite rclone backup is configured.

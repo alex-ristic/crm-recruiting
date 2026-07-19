@@ -4,6 +4,7 @@ import { jobName, positionCardTitle, positionName, stageMeta, visibleCandidates 
 import { compactDateLabel } from "../utils/dates.js";
 import { escapeAttr, escapeHtml, icon, initials } from "../utils/formatting.js";
 import { renderTask, renderTaskComposer } from "./tasks.js";
+import { activeUsers, canEditCandidate, currentUser, permissions, userName } from "../access.js";
 
 export function renderCandidatesBoard() {
   const candidates = visibleCandidates();
@@ -24,6 +25,7 @@ export function renderCandidatesBoard() {
 }
 
 export function renderCandidateModal(candidate) {
+  const editable = canEditCandidate(candidate);
   const meta = stageMeta(candidate.stage, candidateStages);
   const sortedTasks = [...candidate.tasks].sort((a, b) => {
     if (a.done !== b.done) return a.done ? 1 : -1;
@@ -37,56 +39,57 @@ export function renderCandidateModal(candidate) {
       <article class="candidate-modal">
         <div class="modal-bar">
           ${icon("users")} <span>Candidates</span><span class="crumb">›</span><strong>${candidate.name}</strong>
-          <select class="stage-pill" data-candidate-field="${candidate.id}:stage" style="--stage:${meta.color}">
+          <select class="stage-pill" data-candidate-field="${candidate.id}:stage" style="--stage:${meta.color}" ${editable ? "" : "disabled"}>
             ${candidateStages.map(([id, label]) => `<option value="${id}" ${candidate.stage === id ? "selected" : ""}>${label}</option>`).join("")}
           </select>
-          <button class="next-stage-button" data-next-candidate-stage="${candidate.id}">Move to next stage</button>
-          <button class="danger-button" data-delete-candidate="${candidate.id}">Delete</button>
+          ${editable ? `<button class="next-stage-button" data-next-candidate-stage="${candidate.id}">Move to next stage</button>` : ""}
+          ${currentUser?.role === "admin" && editable ? `<button class="danger-button" data-delete-candidate="${candidate.id}">Delete</button>` : ""}
           <button class="icon-button" data-close-modal>${icon("x")}</button>
         </div>
         <div class="modal-body">
           <div class="profile-head">
             <span class="profile-avatar" style="--accent:${meta.color}">${initials(candidate.name)}</span>
             <div>
-              <input class="profile-name" data-candidate-field="${candidate.id}:name" value="${escapeAttr(candidate.name)}" />
+              <input class="profile-name" data-candidate-field="${candidate.id}:name" value="${escapeAttr(candidate.name)}" ${editable ? "" : "disabled"} />
               <p>${jobName(candidate.jobId)} - ${positionName(candidate.positionId)} - ${candidate.added}</p>
             </div>
           </div>
           <div class="fields">
-            ${candidateField(candidate, "name", "Name", "users")}
-            ${candidateField(candidate, "phone", "Phone number", "phone")}
-            ${candidateField(candidate, "source", "Source", "link")}
-            ${candidateField(candidate, "experience", "Experience", "briefcase")}
-            ${candidateField(candidate, "whenStart", "When start", "calendar")}
+            ${permissions.canAssign ? candidateAssigneeField(candidate) : candidateOwnerLabel(candidate)}
+            ${candidateField(candidate, "name", "Name", "users", "text", editable)}
+            ${candidateField(candidate, "phone", "Phone number", "phone", "text", editable)}
+            ${candidateField(candidate, "source", "Source", "link", "text", editable)}
+            ${candidateField(candidate, "experience", "Experience", "briefcase", "text", editable)}
+            ${candidateField(candidate, "whenStart", "When start", "calendar", "text", editable)}
             <div class="field-row">
               <span>${icon("check")}</span><label>EU papers</label>
-              <input class="field-checkbox" data-candidate-field="${candidate.id}:eu" type="checkbox" ${candidate.eu ? "checked" : ""} />
+              <input class="field-checkbox" data-candidate-field="${candidate.id}:eu" type="checkbox" ${candidate.eu ? "checked" : ""} ${editable ? "" : "disabled"} />
             </div>
             <div class="field-row">
               <span>${icon("tag")}</span><label>Job</label>
-              <select data-candidate-field="${candidate.id}:jobId">
+              <select data-candidate-field="${candidate.id}:jobId" ${editable ? "" : "disabled"}>
                 ${state.jobs.map((job) => `<option value="${job.id}" ${candidate.jobId === job.id ? "selected" : ""}>${job.name}</option>`).join("")}
               </select>
             </div>
-            ${candidateGroupControl(candidate)}
+            ${candidateGroupControl(candidate, editable)}
             <div class="field-row">
               <span>${icon("briefcase")}</span><label>Position</label>
-              <select data-candidate-field="${candidate.id}:positionId">
+              <select data-candidate-field="${candidate.id}:positionId" ${editable ? "" : "disabled"}>
                 <option value="" ${candidate.positionId ? "" : "selected"}>No position</option>
                 ${assignablePositions(candidate).map((position) => `<option value="${position.id}" ${candidate.positionId === position.id ? "selected" : ""}>${escapeHtml(positionCardTitle(position))}</option>`).join("")}
               </select>
             </div>
-            ${candidateField(candidate, "startDate", "Start date", "calendar", "date")}
+            ${candidateField(candidate, "startDate", "Start date", "calendar", "date", editable)}
           </div>
           <label class="candidate-note">
             <span>${icon("flag")} Candidate note</span>
-            <textarea data-candidate-field="${candidate.id}:note" placeholder="Write an overarching comment for this candidate...">${escapeHtml(candidate.note)}</textarea>
+            <textarea data-candidate-field="${candidate.id}:note" placeholder="Write an overarching comment for this candidate..." ${editable ? "" : "disabled"}>${escapeHtml(candidate.note)}</textarea>
           </label>
           <div class="task-heading">
             <h2>Tasks</h2><span>${openCount} open</span>
-            <button class="task-heading-action ${composerOpen ? "cancel" : ""}" data-toggle-task-composer="${candidate.id}">
+            ${canAddTask(candidate) ? `<button class="task-heading-action ${composerOpen ? "cancel" : ""}" data-toggle-task-composer="${candidate.id}">
               ${icon(composerOpen ? "x" : "plus")} ${composerOpen ? "Cancel" : "Add task"}
-            </button>
+            </button>` : ""}
           </div>
           ${composerOpen ? renderTaskComposer(candidate) : ""}
           <div class="tasks">
@@ -349,7 +352,7 @@ function openPositionsForCandidate(candidate) {
 function renderCandidateCard(candidate, color, stageId) {
   const showStartDate = shouldShowStartDate(stageId) && candidate.startDate;
   return `
-    <button class="candidate-card ${candidate.id === state.selectedId ? "selected" : ""}" data-open-candidate="${candidate.id}" draggable="true" data-drag-type="candidate" data-drag-id="${candidate.id}">
+    <button class="candidate-card ${candidate.id === state.selectedId ? "selected" : ""}" data-open-candidate="${candidate.id}" draggable="${canEditCandidate(candidate) ? "true" : "false"}" ${canEditCandidate(candidate) ? `data-drag-type="candidate" data-drag-id="${candidate.id}"` : ""}>
       <div class="card-row">
         <span class="avatar" style="--accent:${color}">${initials(candidate.name)}</span>
         <span class="card-name">${candidate.name}</span>
@@ -367,23 +370,42 @@ function shouldShowStartDate(stageId) {
   return trialStartingIndex >= 0 && currentIndex >= trialStartingIndex;
 }
 
-function candidateField(candidate, key, label, iconName, type = "text") {
+function candidateField(candidate, key, label, iconName, type = "text", editable = true) {
   return `
     <div class="field-row">
       <span>${icon(iconName)}</span><label>${label}</label>
-      <input data-candidate-field="${candidate.id}:${key}" type="${type}" value="${escapeAttr(candidate[key])}" />
+      <input data-candidate-field="${candidate.id}:${key}" type="${type}" value="${escapeAttr(candidate[key])}" ${editable ? "" : "disabled"} />
     </div>
   `;
 }
 
-function candidateGroupControl(candidate) {
+function candidateGroupControl(candidate, editable) {
   const manual = candidate.groupOverride !== null && candidate.groupOverride !== undefined;
   const value = manual ? candidate.groupOverride : jobName(candidate.jobId);
   return `
     <div class="field-row candidate-group-row ${manual ? "manual" : ""}">
       <span>${icon("tag")}</span><label>Group</label>
-      <button type="button" class="candidate-group-lock" data-toggle-candidate-group-override="${candidate.id}" title="${manual ? "Use job group" : "Unlock manual group"}">${icon(manual ? "unlock" : "lock")}</button>
-      <input data-candidate-field="${candidate.id}:groupOverride" value="${escapeAttr(value)}" ${manual ? "" : "disabled"} placeholder="e.g. Waiters - Zagreb" />
+      <button type="button" class="candidate-group-lock" data-toggle-candidate-group-override="${candidate.id}" title="${manual ? "Use job group" : "Unlock manual group"}" ${editable ? "" : "disabled"}>${icon(manual ? "unlock" : "lock")}</button>
+      <input data-candidate-field="${candidate.id}:groupOverride" value="${escapeAttr(value)}" ${manual && editable ? "" : "disabled"} placeholder="e.g. Waiters - Zagreb" />
     </div>
   `;
+}
+
+function candidateAssigneeField(candidate) {
+  return `
+    <div class="field-row owner-row">
+      <span>${icon("users")}</span><label>Assigned to</label>
+      <select data-candidate-field="${candidate.id}:assigneeId">
+        <option value="" ${candidate.assigneeId ? "" : "selected"}>Unassigned</option>
+        ${activeUsers().map((user) => `<option value="${user.id}" ${candidate.assigneeId === user.id ? "selected" : ""}>${escapeHtml(user.name)}</option>`).join("")}
+      </select>
+    </div>`;
+}
+
+function candidateOwnerLabel(candidate) {
+  return `<div class="field-row owner-row"><span>${icon("users")}</span><label>Assigned to</label><strong>${escapeHtml(userName(candidate.assigneeId))}</strong></div>`;
+}
+
+function canAddTask(candidate) {
+  return permissions.taskEdit && (permissions.taskScope === "all" || candidate.assigneeId === currentUser?.id);
 }

@@ -7,6 +7,7 @@ import {
   placeholderPositionIds
 } from "./constants.js";
 import { isAtLeastDaysAgo, today } from "./utils/dates.js";
+import { currentUser, permissions } from "./access.js";
 
 export const defaultState = {
   activeTab: "tasks",
@@ -116,6 +117,7 @@ export function freshPositionDraft(jobId = "kuvar-hr") {
 }
 
 export function saveState() {
+  if (!permissions.candidateEdit && !permissions.taskEdit && !permissions.createCandidates && !permissions.manageCatalog) return;
   saveChain = saveChain
     .catch(() => {})
     .then(() => saveServerState(state))
@@ -172,6 +174,7 @@ function normalizeCandidate(candidate) {
     stage = "new-lead",
     closedWonGroup = "",
     groupOverride = null,
+    assigneeId = "",
     lastActivityAt = today(),
     added = "",
     note = "",
@@ -191,6 +194,7 @@ function normalizeCandidate(candidate) {
     stage: normalizeCandidateStage(stage),
     closedWonGroup: normalizeCandidateStage(stage) === "closed-won" ? closedWonGroup || "" : "",
     groupOverride: typeof groupOverride === "string" ? groupOverride : null,
+    assigneeId: typeof assigneeId === "string" ? assigneeId : "",
     lastActivityAt,
     added,
     note,
@@ -204,7 +208,7 @@ function normalizeCandidateStage(stage) {
 }
 
 function normalizeTask(task) {
-  const normalized = { time: "", completedAt: "", ...task };
+  const normalized = { time: "", completedAt: "", assigneeId: "", assignmentMode: "inherited", ...task };
   if (normalized.done && !normalized.completedAt) {
     normalized.completedAt = `${normalized.due || today()}T${normalized.time || "00:00"}`;
   }
@@ -238,6 +242,8 @@ function applyAutomaticCandidateTasks(nextState) {
   return {
     ...nextState,
     candidates: (nextState.candidates || []).map((candidate) => {
+      const canGenerateTask = permissions.taskEdit && (permissions.taskScope === "all" || candidate.assigneeId === currentUser?.id);
+      if (!canGenerateTask) return candidate;
       if (!automaticTaskStages.has(candidate.stage)) return candidate;
       if ((candidate.tasks || []).some((task) => !task.done)) return candidate;
       if (!isAtLeastDaysAgo(candidate.lastActivityAt, 2)) return candidate;
@@ -245,7 +251,7 @@ function applyAutomaticCandidateTasks(nextState) {
         ...candidate,
         tasks: [
           ...(candidate.tasks || []),
-          { id: `auto-check-lead-${candidate.id}-${Date.now()}`, title: "Check lead", urgency: 3, due: today(), time: "", done: false, note: "" }
+          { id: `auto-check-lead-${candidate.id}-${Date.now()}`, title: "Check lead", urgency: 3, due: today(), time: "", done: false, note: "", assigneeId: candidate.assigneeId || currentUser?.id || "", assignmentMode: "inherited" }
         ]
       };
     })

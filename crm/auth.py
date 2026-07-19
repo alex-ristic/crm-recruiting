@@ -35,9 +35,10 @@ def verify_password(password, stored_hash):
     return hmac.compare_digest(expected, actual)
 
 
-def create_session_cookie(settings, username):
+def create_session_cookie(settings, user):
     session = {
-        "username": username,
+        "user_id": user["id"],
+        "username": user["username"],
         "issued_at": int(time.time()),
         "csrf": secrets.token_urlsafe(32),
     }
@@ -83,12 +84,21 @@ def get_session(handler):
     session = _unsign_payload(morsel.value, settings.session_secret)
     if not session:
         return None
-    if session.get("username") != settings.admin_username:
+    user = handler.user_storage.find_by_id(session.get("user_id"))
+    if not user or not user.get("active", True):
         return None
     issued_at = int(session.get("issued_at", 0))
     if issued_at + settings.session_max_age_seconds < int(time.time()):
         return None
     return session
+
+
+def get_current_user(handler):
+    if not handler.settings.auth_enabled:
+        from crm.users import local_admin_user
+        return local_admin_user()
+    session = get_session(handler)
+    return handler.user_storage.find_by_id(session.get("user_id")) if session else None
 
 
 def is_authenticated(handler):

@@ -1,7 +1,27 @@
 const serverStateUrl = "/api/state";
 const sessionUrl = "/api/session";
+const usersUrl = "/api/users";
 
 let csrfToken = null;
+let sessionPromise = null;
+
+export async function loadSession() {
+  if (sessionPromise) return sessionPromise;
+  sessionPromise = fetch(sessionUrl, { cache: "no-store", credentials: "same-origin" })
+    .then((response) => {
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return null;
+      }
+      return response.ok ? response.json() : null;
+    })
+    .then((payload) => {
+      if (payload) csrfToken = payload.csrfToken || "";
+      return payload;
+    })
+    .catch(() => null);
+  return sessionPromise;
+}
 
 export async function loadServerState() {
   if (!window.location.protocol.startsWith("http")) return null;
@@ -52,17 +72,30 @@ export async function logout() {
   window.location.href = "/login";
 }
 
+export async function loadServerUsers() {
+  const response = await fetch(usersUrl, { cache: "no-store", credentials: "same-origin" });
+  if (!response.ok) return [];
+  return (await response.json()).users || [];
+}
+
+export async function saveServerUser(payload) {
+  const token = await getCsrfToken();
+  const response = await fetch(usersUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { "X-CSRF-Token": token } : {}) },
+    credentials: "same-origin",
+    body: JSON.stringify(payload)
+  });
+  const result = await response.json().catch(() => ({ ok: false, reason: "request_failed" }));
+  if (!response.ok) throw new Error(result.reason || "request_failed");
+  return result;
+}
+
 async function getCsrfToken() {
   if (csrfToken !== null) return csrfToken;
   try {
-    const response = await fetch(sessionUrl, { cache: "no-store", credentials: "same-origin" });
-    if (response.status === 401) {
-      window.location.href = "/login";
-      return null;
-    }
-    if (!response.ok) return null;
-    const payload = await response.json();
-    csrfToken = payload.csrfToken || "";
+    const payload = await loadSession();
+    csrfToken = payload?.csrfToken || "";
     return csrfToken;
   } catch {
     return null;

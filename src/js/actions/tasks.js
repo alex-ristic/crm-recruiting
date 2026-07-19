@@ -3,6 +3,7 @@ import { startClosedLostDecision, syncLinkedPosition, withStageMoveTask } from "
 import { actionLabel } from "../utils/formatting.js";
 import { addDays, completionTimestamp, today } from "../utils/dates.js";
 import { candidateStages } from "../constants.js";
+import { permissions } from "../access.js";
 
 export function toggleTaskGroup(key) {
   setState({ collapsedTaskGroups: { ...state.collapsedTaskGroups, [key]: !state.collapsedTaskGroups[key] } });
@@ -42,7 +43,8 @@ export function updateNewTaskUrgency(urgency) {
 
 export function addTask(candidateId) {
   if (!state.newTask.title.trim()) return;
-  const task = { id: `task-${Date.now()}`, title: state.newTask.title.trim(), urgency: state.newTask.urgency, due: state.newTask.due || today(), time: state.newTask.time || "", done: false, note: "" };
+  const candidate = state.candidates.find((item) => item.id === candidateId);
+  const task = { id: `task-${Date.now()}`, title: state.newTask.title.trim(), urgency: state.newTask.urgency, due: state.newTask.due || today(), time: state.newTask.time || "", done: false, note: "", assigneeId: candidate?.assigneeId || "", assignmentMode: "inherited" };
   setState({
     candidates: state.candidates.map((candidate) => candidate.id === candidateId ? { ...candidate, lastActivityAt: today(), tasks: [...candidate.tasks, task] } : candidate),
     newTask: freshTaskDraft(),
@@ -57,7 +59,15 @@ export function updateTask(event) {
     candidates: state.candidates.map((candidate) => candidate.id === candidateId ? {
       ...candidate,
       lastActivityAt: today(),
-      tasks: candidate.tasks.map((task) => task.id === taskId ? { ...task, [key]: value } : task)
+      tasks: candidate.tasks.map((task) => {
+        if (task.id !== taskId) return task;
+        if (key === "assigneeId" && permissions.canAssign) {
+          return value === "__inherit__"
+            ? { ...task, assigneeId: candidate.assigneeId || "", assignmentMode: "inherited" }
+            : { ...task, assigneeId: value, assignmentMode: "explicit" };
+        }
+        return { ...task, [key]: value };
+      })
     } : candidate)
   };
   if (["title", "note"].includes(key)) setStateQuiet(patch);

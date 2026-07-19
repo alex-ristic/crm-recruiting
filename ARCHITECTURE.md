@@ -11,6 +11,7 @@ The project is intentionally simple:
 - `src/js/` contains frontend state, API, events, actions, renderers, selectors, and utilities.
 - `src/styles.css` contains the current UI styles.
 - `crm-state.json` is the local persisted state file.
+- `crm-users.json` stores user accounts, password hashes, roles, and permission overrides.
 - `tests/` contains smoke and storage tests.
 
 ## Backend Layout
@@ -21,6 +22,7 @@ crm/
   config.py              Environment-backed settings
   logging_config.py      Logging setup
   auth.py                Password hashing, session cookies, CSRF helpers
+  users.py               User storage, role defaults, permission calculation
   routes/auth.py         Login, logout, session endpoint
   routes/state.py        /api/state handlers
   storage/base.py        Storage interface
@@ -75,6 +77,8 @@ The frontend relies on:
 - `GET /api/session`
 - `GET /api/state`
 - `POST /api/state`
+- `GET /api/users`
+- `POST /api/users`
 - `/`
 - `/src/app.js`
 - `/src/styles.css`

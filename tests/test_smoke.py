@@ -25,6 +25,7 @@ class ServerSmokeTest(unittest.TestCase):
             host="127.0.0.1",
             port=0,
             state_file=self.state_file,
+            user_file=Path(self.temp_dir.name) / "users.json",
             backup_dir=Path(self.temp_dir.name) / "backups",
             max_state_bytes=1024 * 1024,
             auth_required=False,
@@ -145,10 +146,10 @@ class ServerSmokeTest(unittest.TestCase):
     def test_state_file_is_not_served_staticly(self):
         self.state_file.write_text(json.dumps({"secret": "local data"}), encoding="utf-8")
 
-        with self.assertRaises(urllib.error.HTTPError) as error:
-            urllib.request.urlopen(f"{self.base_url}/crm-state.json", timeout=5)
-
-        self.assertEqual(error.exception.code, 404)
+        for path in ("/crm-state.json", "/crm-users.json"):
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                urllib.request.urlopen(f"{self.base_url}{path}", timeout=5)
+            self.assertEqual(error.exception.code, 404)
 
     def test_auth_protects_pages_api_and_post_csrf(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -158,6 +159,7 @@ class ServerSmokeTest(unittest.TestCase):
                 host="127.0.0.1",
                 port=0,
                 state_file=state_file,
+                user_file=Path(temp_dir) / "users.json",
                 backup_dir=Path(temp_dir) / "backups",
                 auth_required=True,
                 admin_username="admin",
@@ -211,6 +213,42 @@ class ServerSmokeTest(unittest.TestCase):
                 )
                 response = json.loads(opener.open(allowed_post, timeout=5).read().decode("utf-8"))
                 self.assertTrue(response["ok"])
+
+                users_response = json.loads(opener.open(f"{base_url}/api/users", timeout=5).read().decode("utf-8"))
+                self.assertEqual(users_response["users"][0]["role"], "admin")
+                create_viewer = urllib.request.Request(
+                    f"{base_url}/api/users",
+                    data=json.dumps({"action": "create", "name": "Viewer", "username": "viewer", "password": "viewer-password", "role": "viewer"}).encode("utf-8"),
+                    method="POST",
+                    headers={"Content-Type": "application/json", "X-CSRF-Token": session["csrfToken"]},
+                )
+                self.assertTrue(json.loads(opener.open(create_viewer, timeout=5).read().decode("utf-8"))["ok"])
+
+                viewer_jar = http.cookiejar.CookieJar()
+                viewer_opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(viewer_jar))
+                viewer_login = urllib.request.Request(
+                    f"{base_url}/login",
+                    data=urllib.parse.urlencode({"username": "viewer", "password": "viewer-password"}).encode("utf-8"),
+                    method="POST",
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                )
+                viewer_opener.open(viewer_login, timeout=5)
+                viewer_session = json.loads(viewer_opener.open(f"{base_url}/api/session", timeout=5).read().decode("utf-8"))
+                self.assertEqual(viewer_session["user"]["role"], "viewer")
+                self.assertFalse(viewer_session["permissions"]["candidateEdit"])
+                with self.assertRaises(urllib.error.HTTPError) as users_forbidden:
+                    viewer_opener.open(f"{base_url}/api/users", timeout=5)
+                self.assertEqual(users_forbidden.exception.code, 403)
+                viewer_state = json.loads(viewer_opener.open(f"{base_url}/api/state", timeout=5).read().decode("utf-8"))["state"]
+                viewer_post = urllib.request.Request(
+                    f"{base_url}/api/state",
+                    data=json.dumps(viewer_state).encode("utf-8"),
+                    method="POST",
+                    headers={"Content-Type": "application/json", "X-CSRF-Token": viewer_session["csrfToken"]},
+                )
+                with self.assertRaises(urllib.error.HTTPError) as viewer_forbidden:
+                    viewer_opener.open(viewer_post, timeout=5)
+                self.assertEqual(viewer_forbidden.exception.code, 403)
 
                 logout_request = urllib.request.Request(
                     f"{base_url}/logout",

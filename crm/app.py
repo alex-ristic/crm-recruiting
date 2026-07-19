@@ -1,6 +1,7 @@
 import logging
 import mimetypes
 import errno
+import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -10,7 +11,9 @@ from crm.config import load_settings
 from crm.auth import is_authenticated, is_same_origin, verify_csrf
 from crm.routes.auth import handle_login_page, handle_login_post, handle_logout_post, handle_session
 from crm.routes.state import handle_get_state, handle_post_state
+from crm.routes.users import handle_get_users, handle_post_users
 from crm.storage import JsonStateStorage
+from crm.users import JsonUserStorage
 
 
 logger = logging.getLogger(__name__)
@@ -25,6 +28,8 @@ STATIC_FILES = {
 class CRMRequestHandler(BaseHTTPRequestHandler):
     settings = None
     storage = None
+    user_storage = None
+    state_lock = None
 
     def do_GET(self):
         path = self._request_path()
@@ -40,6 +45,9 @@ class CRMRequestHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/state":
             handle_get_state(self)
+            return
+        if path == "/api/users":
+            handle_get_users(self)
             return
         self._serve_static(path)
 
@@ -62,7 +70,11 @@ class CRMRequestHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.FORBIDDEN)
             return
         if path == "/api/state":
-            handle_post_state(self)
+            with self.state_lock:
+                handle_post_state(self)
+            return
+        if path == "/api/users":
+            handle_post_users(self)
             return
         self.send_error(HTTPStatus.NOT_FOUND)
 
@@ -136,15 +148,18 @@ def _static_path_for(path):
     return relative_path
 
 
-def create_server(settings=None, storage=None):
+def create_server(settings=None, storage=None, user_storage=None):
     settings = settings or load_settings()
     storage = storage or JsonStateStorage(settings.state_file, settings.backup_dir, settings.max_backups)
+    user_storage = user_storage or JsonUserStorage(settings.user_file, settings.admin_username, settings.admin_password_hash, settings.backup_dir, settings.max_backups)
 
     class Handler(CRMRequestHandler):
         pass
 
     Handler.settings = settings
     Handler.storage = storage
+    Handler.user_storage = user_storage
+    Handler.state_lock = threading.RLock()
     return ThreadingHTTPServer((settings.host, settings.port), Handler)
 
 

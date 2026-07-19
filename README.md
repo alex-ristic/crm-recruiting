@@ -23,13 +23,14 @@ CRM_HOST=127.0.0.1
 CRM_PORT=8000
 CRM_ENV=local
 CRM_STATE_FILE=crm-state.json
+CRM_USER_FILE=crm-users.json
 CRM_BACKUP_DIR=backups
 CRM_MAX_STATE_BYTES=5242880
 ```
 
 See `.env.example` for the same values. `HOST`, `PORT`, and `CRM_STATE_PATH` are also accepted as deployment aliases, but `CRM_HOST`, `CRM_PORT`, and `CRM_STATE_FILE` are the canonical names used in docs.
 
-For VPS use, set `CRM_AUTH_REQUIRED=1`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, and `SESSION_SECRET`. Generate a password hash with:
+For VPS use, set `CRM_AUTH_REQUIRED=1`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, and `SESSION_SECRET`. On first startup, those administrator credentials create the initial user in `CRM_USER_FILE`; further users are managed inside the app. Generate a password hash with:
 
 ```bash
 python3 -m crm.auth 'your-long-admin-password'
@@ -45,20 +46,21 @@ The tests use only the Python standard library.
 
 ## Current Storage
 
-CRM data is stored as one JSON document. By default that file is:
+CRM records are stored as one JSON document. User accounts and password hashes are stored separately. By default those files are:
 
 ```text
 crm-state.json
+crm-users.json
 ```
 
-The browser also keeps a localStorage fallback. The backend API contract is:
+The backend API contract is:
 
 - `GET /api/state` returns `{"state": <object-or-null>}`.
 - `POST /api/state` accepts a complete JSON state object and returns `{"ok": true, "state": <revisioned-state>}`.
 
 ## Local-Only Notice
 
-For online use, read `VPS_DEPLOYMENT.md` and `VPS_BACKUP.md` first. Keep `crm-state.json`, `.env`, and `/etc/crm-recruiting.env` out of git.
+For online use, read `VPS_DEPLOYMENT.md` and `VPS_BACKUP.md` first. Keep `crm-state.json`, `crm-users.json`, `.env`, and `/etc/crm-recruiting.env` out of git.
 
 ## Deploying With OpenClaw On VPS
 
