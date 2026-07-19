@@ -2,7 +2,7 @@ import { state } from "../state.js";
 import { candidateJobName, positionName } from "../selectors.js";
 import { compactDateLabel, isFutureDate, taskDateGroup } from "../utils/dates.js";
 import { escapeAttr, escapeHtml, formatCompletedAt, icon } from "../utils/formatting.js";
-import { activeUsers, canEditTask, permissions, userName } from "../access.js";
+import { activeUsers, canEditTask, currentUser, permissions, userName } from "../access.js";
 
 export function renderTasksBoard() {
   const tasks = candidateTasks();
@@ -28,6 +28,7 @@ export function renderTasksBoard() {
           ${taskViewOption("position", "Position", state.taskView.sortBy)}
         </select></label>
         <label class="task-upcoming-toggle"><input data-task-view="includeUpcoming" type="checkbox" ${state.taskView.includeUpcoming ? "checked" : ""} /> Include upcoming tasks</label>
+        ${permissions.taskScope === "all" ? `<label class="task-upcoming-toggle"><input data-task-view="onlyMine" type="checkbox" ${state.taskView.onlyMine ? "checked" : ""} /> Only mine</label>` : ""}
       </div>
       <div class="task-list-shell">
         ${groups.map((group) => renderTaskGroup(group)).join("") || `<div class="empty-tasks">No open tasks.</div>`}
@@ -43,6 +44,7 @@ function candidateTasks() {
     .filter(({ candidate, task }) => {
       if (task.done) return false;
       if (!state.taskView.includeUpcoming && isFutureDate(task.due)) return false;
+      if (state.taskView.onlyMine && !isMyTask(candidate, task)) return false;
       if (!q) return true;
       return [task.title, task.note, task.due, task.time, candidate.name, candidate.phone, candidate.experience, candidate.whenStart, candidate.startDate, candidateJobName(candidate), positionName(candidate.positionId)]
         .join(" ")
@@ -50,6 +52,11 @@ function candidateTasks() {
         .includes(q);
     })
     .sort(taskSorter(state.taskView.sortBy));
+}
+
+function isMyTask(candidate, task) {
+  if (task.assigneeId === currentUser?.id) return true;
+  return !task.assigneeId && candidate.assigneeId === currentUser?.id;
 }
 
 function isTaskPresetActive(preset) {

@@ -24,7 +24,7 @@ export const defaultState = {
   pendingClosedLostDecision: null,
   collapsedCandidateGroups: {},
   collapsedTaskGroups: {},
-  taskView: { groupBy: "due", sortBy: "urgency", includeUpcoming: false },
+  taskView: { groupBy: "due", sortBy: "urgency", includeUpcoming: false, onlyMine: false },
   taskComposerCandidateId: null,
   showJobComposer: false,
   showPositionComposer: false,
@@ -104,7 +104,8 @@ function normalizeTaskView(view) {
   return {
     groupBy: groups.has(view.groupBy) ? view.groupBy : "due",
     sortBy: sorts.has(view.sortBy) ? view.sortBy : "urgency",
-    includeUpcoming: view.includeUpcoming !== false
+    includeUpcoming: view.includeUpcoming !== false,
+    onlyMine: !!view.onlyMine
   };
 }
 

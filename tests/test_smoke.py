@@ -49,6 +49,7 @@ class ServerSmokeTest(unittest.TestCase):
         self.assertIn("Recruiting CRM", self._get_text("/"))
         self.assertIn("initialize();", self._get_text("/src/app.js"))
         self.assertIn("export let state", self._get_text("/src/js/state.js"))
+        self.assertIn("Only mine", self._get_text("/src/js/render/tasks.js"))
         self.assertIn(".crm-shell", self._get_text("/src/styles.css"))
 
     def test_api_state_round_trip(self):
