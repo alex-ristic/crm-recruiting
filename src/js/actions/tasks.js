@@ -114,7 +114,7 @@ export function toggleTask(event) {
 
 export function quickAction(event) {
   const [candidateId, taskId, action] = event.currentTarget.dataset.action.split(":");
-  if (action === "not-interested" && startClosedLostDecision(candidateId, taskId, action)) return;
+  if (["not-interested", "second-no-answer"].includes(action) && startClosedLostDecision(candidateId, taskId, action)) return;
   let nextCandidates = state.candidates.map((candidate) => {
     if (candidate.id !== candidateId) return candidate;
     let stage = candidate.stage;
@@ -126,6 +126,7 @@ export function quickAction(event) {
     else {
       const stageByAction = {
         "no-answer": "in-work",
+        "second-no-answer": "closed-lost",
         busy: "negotiation-1",
         interested: "negotiation-2",
         "not-interested": "closed-lost",

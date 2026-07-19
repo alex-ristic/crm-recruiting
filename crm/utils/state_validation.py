@@ -65,6 +65,8 @@ def _validate_candidates(candidates):
         seen.add(candidate_id)
         if "eu" in candidate and not isinstance(candidate["eu"], bool):
             raise StateValidationError("candidate eu must be boolean")
+        if "groupOverride" in candidate and candidate["groupOverride"] is not None and not isinstance(candidate["groupOverride"], str):
+            raise StateValidationError("candidate groupOverride must be a string or null")
         tasks = candidate.get("tasks", [])
         if not isinstance(tasks, list):
             raise StateValidationError("candidate tasks must be a list")

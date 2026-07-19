@@ -66,6 +66,7 @@ class ServerSmokeTest(unittest.TestCase):
                 "experience": "5 seasons",
                 "whenStart": "Immediately",
                 "startDate": "2026-07-15",
+                "groupOverride": "Waiters - Zagreb",
                 "legacyRemovedField": "remove me",
                 "tasks": [],
             }],
@@ -78,6 +79,7 @@ class ServerSmokeTest(unittest.TestCase):
         self.assertEqual(response["state"]["candidates"][0]["whenStart"], "Immediately")
         self.assertEqual(response["state"]["candidates"][0]["startDate"], "2026-07-15")
         self.assertEqual(response["state"]["candidates"][0]["lastActivityAt"], "2026-07-03")
+        self.assertEqual(response["state"]["candidates"][0]["groupOverride"], "Waiters - Zagreb")
         self.assertTrue(response["state"]["candidates"][0]["eu"])
         self.assertNotIn("legacyRemovedField", response["state"]["candidates"][0])
         self.assertEqual(self._get_json("/api/state"), {"state": response["state"]})

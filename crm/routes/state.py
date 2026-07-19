@@ -61,6 +61,7 @@ def strip_removed_fields(payload):
         "added",
         "eu",
         "experience",
+        "groupOverride",
         "id",
         "jobId",
         "lastActivityAt",

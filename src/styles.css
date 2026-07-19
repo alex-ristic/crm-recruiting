@@ -102,6 +102,10 @@ svg { width: 100%; height: 100%; }
 .field-row label { width: 120px; flex: 0 0 120px; color: #94a3b8; font-size: 13px; }
 .field-row input, .field-row select { min-width: 0; flex: 1; height: 30px; border: 0; outline: 0; background: transparent; color: #0f172a; font-size: 13px; }
 .field-row .field-checkbox { width: 16px; height: 16px; flex: 0 0 16px; accent-color: #0052ff; }
+.candidate-group-lock { width: 26px; height: 24px; flex: 0 0 26px; display: grid; place-items: center; padding: 6px; border: 1px solid #dbe4f0; border-radius: 7px; color: #64748b; background: #fff; }
+.candidate-group-lock svg { width: 13px; height: 13px; }
+.candidate-group-row.manual .candidate-group-lock { color: #0052ff; border-color: #bfdbfe; background: #eff6ff; }
+.candidate-group-row input:disabled { color: #64748b; cursor: not-allowed; }
 .candidate-note { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
 .candidate-note span { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .candidate-note svg { width: 14px; height: 14px; }
@@ -157,6 +161,7 @@ textarea { resize: vertical; }
 .complete-toggle { width: 20px; height: 20px; flex: 0 0 20px; display: grid; place-items: center; margin-top: 1px; padding: 3px; border: 1.5px solid #cbd5e1; border-radius: 999px; color: #16a34a; background: #fff; }
 .stage-move-task { min-height: 44px; align-items: center; padding: 10px 12px; }
 .stage-move-task .task-main { gap: 0; }
+.stage-move-task .tiny-danger { margin-left: 0; }
 .square-toggle { border-radius: 5px; }
 .stage-move-title { color: #334155; font-size: 13px; font-weight: 700; }
 .task-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; }
@@ -184,7 +189,7 @@ textarea { resize: vertical; }
 .quick-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .quick { height: 24px; padding: 0 8px; border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; font-size: 11px; font-weight: 500; }
 .quick-divider { width: 1px; height: 24px; margin: 0 3px; background: #cbd5e1; }
-.quick.no-answer, .quick.busy { color: #92400e; background: #fffbeb; border-color: #fde68a; }
+.quick.no-answer, .quick.second-no-answer, .quick.busy { color: #92400e; background: #fffbeb; border-color: #fde68a; }
 .quick.interested { color: #5b21b6; background: #f5f3ff; border-color: #ddd6fe; }
 .quick.not-interested { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
 .quick.good-to-place { color: #0e7490; background: #ecfeff; border-color: #a5f3fc; }

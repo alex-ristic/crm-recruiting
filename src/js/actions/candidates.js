@@ -10,7 +10,7 @@ export function toggleCandidateGroup(key) {
 export function addCandidate() {
   const jobId = state.jobs[0]?.id || "";
   const id = `candidate-${Date.now()}`;
-  const candidate = { id, name: "New Candidate", phone: "", source: "Manual", experience: "", whenStart: "", startDate: "", eu: true, jobId, positionId: "", stage: "new-lead", closedWonGroup: "", lastActivityAt: today(), added: "Just added", note: "", tasks: [] };
+  const candidate = { id, name: "New Candidate", phone: "", source: "Manual", experience: "", whenStart: "", startDate: "", eu: true, jobId, positionId: "", stage: "new-lead", closedWonGroup: "", groupOverride: null, lastActivityAt: today(), added: "Just added", note: "", tasks: [] };
   setState({ candidates: [candidate, ...state.candidates], selectedId: id, activeTab: "candidates" });
 }
 
@@ -42,6 +42,17 @@ export function updateCandidate(event) {
   const patch = syncLinkedPosition({ candidates }, id, key === "stage" ? value : candidates.find((candidate) => candidate.id === id)?.stage);
   if (event.type === "input" && !["stage", "jobId", "positionId", "eu"].includes(key)) setStateQuiet(patch);
   else setState(patch);
+}
+
+export function toggleCandidateGroupOverride(candidateId) {
+  const candidate = state.candidates.find((item) => item.id === candidateId);
+  if (!candidate) return;
+  const groupOverride = candidate.groupOverride === null || candidate.groupOverride === undefined
+    ? candidateGroupName(candidate)
+    : null;
+  setState({
+    candidates: state.candidates.map((item) => item.id === candidateId ? { ...item, groupOverride } : item)
+  });
 }
 
 export function moveCandidateToNextStage(candidateId) {
@@ -136,6 +147,11 @@ function closedWonGroupForCandidate(candidate) {
 
 function linkedPositionClosedWonGroup(positionId) {
   return state.positions.find((position) => position.id === positionId)?.closedWonGroup || "";
+}
+
+function candidateGroupName(candidate) {
+  const manualGroup = typeof candidate.groupOverride === "string" ? candidate.groupOverride.trim() : "";
+  return manualGroup || state.jobs.find((job) => job.id === candidate.jobId)?.name || "No job";
 }
 
 function withPositionStage(candidate, positionId) {

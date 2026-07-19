@@ -157,7 +157,7 @@ export function renderTaskComposer(candidate) {
 }
 
 export function renderTask(candidate, task) {
-  if (task.type === "stage-move") return renderStageMoveTask(task);
+  if (task.type === "stage-move") return renderStageMoveTask(candidate, task);
   return `
     <article class="task-card ${task.done ? "done" : ""}">
       <button class="complete-toggle" data-toggle-task="${candidate.id}:${task.id}" title="Complete task">${task.done ? icon("check") : ""}</button>
@@ -185,6 +185,7 @@ export function renderTask(candidate, task) {
           ${quickButton("disqualify", "Disqualify")}
           ${quickButton("no-call-dq", "No call - DQ")}
           <span class="quick-divider"></span>
+          ${quickButton("second-no-answer", "2nd no answer")}
           ${quickButton("good-to-place", "Good to place")}
         </div>
       </div>
@@ -192,7 +193,7 @@ export function renderTask(candidate, task) {
   `.replaceAll('data-action="', `data-action="${candidate.id}:${task.id}:`);
 }
 
-function renderStageMoveTask(task) {
+function renderStageMoveTask(candidate, task) {
   return `
     <article class="task-card stage-move-task done">
       <span class="complete-toggle square-toggle">${icon("check")}</span>
@@ -200,6 +201,7 @@ function renderStageMoveTask(task) {
         <div class="task-title-row">
           <span class="stage-move-title">${escapeHtml(task.title)}</span>
           <span class="completed-at">${formatCompletedAt(task.completedAt)}</span>
+          <button class="tiny-danger" data-delete-task="${candidate.id}:${task.id}" title="Delete task">${icon("x")}</button>
         </div>
       </div>
     </article>

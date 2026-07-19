@@ -1,6 +1,6 @@
 import { app } from "./dom.js";
 import { state, setState } from "./state.js";
-import { addCandidate, applyClosedLostDecision, cancelClosedLostDecision, deleteCandidate, moveCandidateToNextStage, moveCandidateToStage, toggleCandidateGroup, updateCandidate } from "./actions/candidates.js";
+import { addCandidate, applyClosedLostDecision, cancelClosedLostDecision, deleteCandidate, moveCandidateToNextStage, moveCandidateToStage, toggleCandidateGroup, toggleCandidateGroupOverride, updateCandidate } from "./actions/candidates.js";
 import {
   clearPositionFilters,
   createJob,
@@ -88,6 +88,7 @@ export function bindEvents() {
   app.querySelector("[data-toggle-potential-candidates]")?.addEventListener("click", togglePotentialCandidates);
   app.querySelector("[data-toggle-closed-won-candidate-groups]")?.addEventListener("click", toggleClosedWonCandidateGroups);
   app.querySelectorAll("[data-toggle-candidate-group]").forEach((button) => button.addEventListener("click", () => toggleCandidateGroup(button.dataset.toggleCandidateGroup)));
+  app.querySelectorAll("[data-toggle-candidate-group-override]").forEach((button) => button.addEventListener("click", () => toggleCandidateGroupOverride(button.dataset.toggleCandidateGroupOverride)));
   app.querySelectorAll("[data-next-candidate-stage]").forEach((button) => button.addEventListener("click", () => moveCandidateToNextStage(button.dataset.nextCandidateStage)));
   app.querySelector("[data-add='job']")?.addEventListener("click", toggleJobComposer);
   app.querySelector("[data-add='position']")?.addEventListener("click", togglePositionComposer);

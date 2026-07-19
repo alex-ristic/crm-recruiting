@@ -68,6 +68,7 @@ export function renderCandidateModal(candidate) {
                 ${state.jobs.map((job) => `<option value="${job.id}" ${candidate.jobId === job.id ? "selected" : ""}>${job.name}</option>`).join("")}
               </select>
             </div>
+            ${candidateGroupControl(candidate)}
             <div class="field-row">
               <span>${icon("briefcase")}</span><label>Position</label>
               <select data-candidate-field="${candidate.id}:positionId">
@@ -274,12 +275,26 @@ function renderCandidateSubgroup(group, key, color, stageId) {
 }
 
 function jobCandidateGroups(candidates) {
-  const groups = state.jobs
-    .map((job) => jobCandidateGroup(job.id, job.name, candidates.filter((candidate) => candidate.jobId === job.id)))
-    .filter((group) => group.candidates.length);
-  const unassigned = candidates.filter((candidate) => !state.jobs.some((job) => job.id === candidate.jobId));
-  if (unassigned.length) groups.push(jobCandidateGroup("unassigned", "No job", unassigned));
-  return groups;
+  const groups = new Map();
+  candidates.forEach((candidate) => {
+    const name = candidateGroupName(candidate);
+    const id = `group:${name.trim().toLocaleLowerCase()}`;
+    const isManual = candidate.groupOverride !== null && candidate.groupOverride !== undefined;
+    const jobOrder = state.jobs.findIndex((job) => job.id === candidate.jobId);
+    const order = isManual ? state.jobs.length : jobOrder >= 0 ? jobOrder : state.jobs.length - 0.5;
+    if (!groups.has(id)) groups.set(id, { id, name, order, candidates: [] });
+    const group = groups.get(id);
+    group.order = Math.min(group.order, order);
+    group.candidates.push(candidate);
+  });
+  return [...groups.values()]
+    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+    .map((group) => jobCandidateGroup(group.id, group.name, group.candidates));
+}
+
+function candidateGroupName(candidate) {
+  const manualGroup = typeof candidate.groupOverride === "string" ? candidate.groupOverride.trim() : "";
+  return manualGroup || jobName(candidate.jobId);
 }
 
 function jobCandidateGroup(id, name, candidates) {
@@ -357,6 +372,18 @@ function candidateField(candidate, key, label, iconName, type = "text") {
     <div class="field-row">
       <span>${icon(iconName)}</span><label>${label}</label>
       <input data-candidate-field="${candidate.id}:${key}" type="${type}" value="${escapeAttr(candidate[key])}" />
+    </div>
+  `;
+}
+
+function candidateGroupControl(candidate) {
+  const manual = candidate.groupOverride !== null && candidate.groupOverride !== undefined;
+  const value = manual ? candidate.groupOverride : jobName(candidate.jobId);
+  return `
+    <div class="field-row candidate-group-row ${manual ? "manual" : ""}">
+      <span>${icon("tag")}</span><label>Group</label>
+      <button type="button" class="candidate-group-lock" data-toggle-candidate-group-override="${candidate.id}" title="${manual ? "Use job group" : "Unlock manual group"}">${icon(manual ? "unlock" : "lock")}</button>
+      <input data-candidate-field="${candidate.id}:groupOverride" value="${escapeAttr(value)}" ${manual ? "" : "disabled"} placeholder="e.g. Waiters - Zagreb" />
     </div>
   `;
 }

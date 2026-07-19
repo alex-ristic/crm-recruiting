@@ -38,6 +38,7 @@ export function formatCompletedAt(value) {
 }
 
 export function actionLabel(action) {
+  if (action === "second-no-answer") return "Outcome: No answer (2nd attempt)";
   return `Outcome: ${action.replaceAll("-", " ")}`;
 }
 
